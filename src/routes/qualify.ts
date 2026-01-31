@@ -19,6 +19,7 @@ interface QualifyRequestBody {
   inReplyToMessageId?: string;
   emailReceivedAt?: string;
   webhookUrl?: string; // Optional callback URL for async notification
+  byokApiKey?: string; // Optional BYOK Anthropic key (mcpfactory uses user's key, pressbeat uses platform key)
 }
 
 /**

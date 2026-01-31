@@ -34,6 +34,7 @@ export interface QualificationResult {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
+  usedByok: boolean;
   responseRaw: unknown;
 }
 
