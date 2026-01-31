@@ -9,5 +9,8 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "json", "html"],
     },
+    // Run tests sequentially for DB tests
+    fileParallelism: false,
+    maxWorkers: 1,
   },
 });

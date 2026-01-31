@@ -14,9 +14,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm install
-      - run: npm test
+          cache: "npm"
+      - run: npm ci
+      
+      - name: Run unit tests
+        run: npm run test:unit
         env:
-          REPLY_QUALIFICATION_SERVICE_DATABASE_URL: postgresql://test:test@localhost/test
+          REPLY_QUALIFICATION_SERVICE_API_KEY: test-api-key
+          ANTHROPIC_API_KEY: test-anthropic-key
+      
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          REPLY_QUALIFICATION_SERVICE_DATABASE_URL: ${{ secrets.REPLY_QUALIFICATION_SERVICE_DATABASE_URL_DEV }}
           REPLY_QUALIFICATION_SERVICE_API_KEY: test-api-key
           ANTHROPIC_API_KEY: test-anthropic-key
