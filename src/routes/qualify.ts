@@ -58,12 +58,13 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       })
       .returning();
     
-    // Run AI qualification
-    const result = await qualifyReply(
-      body.subject || null,
-      body.bodyText || null,
-      body.bodyHtml || null
-    );
+    // Run AI qualification (supports BYOK - if byokApiKey provided, uses that instead of platform key)
+    const result = await qualifyReply({
+      subject: body.subject || null,
+      bodyText: body.bodyText || null,
+      bodyHtml: body.bodyHtml || null,
+      byokApiKey: body.byokApiKey, // Optional: mcpfactory passes user's key, pressbeat omits
+    });
     
     // Store the qualification
     const [qualification] = await db
@@ -92,6 +93,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       suggestedAction: qualification.suggestedAction,
       extractedDetails: qualification.extractedDetails,
       costUsd: parseFloat(String(qualification.costUsd)),
+      usedByok: result.usedByok, // true if user's BYOK key was used
       createdAt: qualification.createdAt,
     });
   } catch (error) {

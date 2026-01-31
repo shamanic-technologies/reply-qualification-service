@@ -1,16 +1,28 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-let anthropicClient: Anthropic | null = null;
+// Cache for platform client (reused when no BYOK provided)
+let platformClient: Anthropic | null = null;
 
-function getAnthropicClient(): Anthropic {
-  if (!anthropicClient) {
+/**
+ * Get Anthropic client - supports BYOK (Bring Your Own Key)
+ * @param byokApiKey - Optional user-provided API key (for mcpfactory)
+ * @returns Anthropic client using either BYOK or platform key
+ */
+function getAnthropicClient(byokApiKey?: string): Anthropic {
+  // If BYOK provided, create a new client with that key (don't cache)
+  if (byokApiKey) {
+    return new Anthropic({ apiKey: byokApiKey });
+  }
+  
+  // Otherwise use platform key (cached)
+  if (!platformClient) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY is not set");
+      throw new Error("ANTHROPIC_API_KEY is not set and no BYOK key provided");
     }
-    anthropicClient = new Anthropic({ apiKey });
+    platformClient = new Anthropic({ apiKey });
   }
-  return anthropicClient;
+  return platformClient;
 }
 
 export interface QualificationResult {
@@ -58,12 +70,17 @@ Respond in JSON format:
 const HAIKU_INPUT_PRICE = 0.25;
 const HAIKU_OUTPUT_PRICE = 1.25;
 
-export async function qualifyReply(
-  subject: string | null,
-  bodyText: string | null,
-  bodyHtml: string | null
-): Promise<QualificationResult> {
-  const client = getAnthropicClient();
+export interface QualifyOptions {
+  subject: string | null;
+  bodyText: string | null;
+  bodyHtml: string | null;
+  byokApiKey?: string; // Optional BYOK for mcpfactory users
+}
+
+export async function qualifyReply(options: QualifyOptions): Promise<QualificationResult> {
+  const { subject, bodyText, bodyHtml, byokApiKey } = options;
+  const usedByok = !!byokApiKey;
+  const client = getAnthropicClient(byokApiKey);
   
   // Use text body if available, otherwise strip HTML
   const content = bodyText || stripHtml(bodyHtml || "");
@@ -112,6 +129,7 @@ ${content}`;
     inputTokens,
     outputTokens,
     costUsd,
+    usedByok,
     responseRaw: response,
   };
 }
