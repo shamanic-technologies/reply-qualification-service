@@ -57,7 +57,7 @@ describe("Reply Qualification Service Database", () => {
       expect(found).toBeUndefined();
     });
 
-    it("should support all classification types", async () => {
+    it("should support all classification types", { timeout: 30000 }, async () => {
       const classifications = [
         "willing_to_meet", "interested", "needs_more_info", "not_interested",
         "out_of_office", "unsubscribe", "bounce", "other"

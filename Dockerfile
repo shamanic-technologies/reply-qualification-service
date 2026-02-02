@@ -17,8 +17,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy built files and production dependencies
+# Copy built files, migrations, and production dependencies
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/package*.json ./
 RUN npm install --production
 
