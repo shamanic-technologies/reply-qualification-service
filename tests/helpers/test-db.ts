@@ -1,6 +1,9 @@
 import { db, sql } from "../../src/db/index.js";
 import { qualificationRequests, qualifications, webhookCallbacks } from "../../src/db/schema.js";
 
+// Executor type: works with both db and transaction objects
+type Executor = Pick<typeof db, "insert" | "delete" | "select">;
+
 /**
  * Clean all test data from the database
  */
@@ -20,8 +23,8 @@ export async function insertTestRequest(data: {
   toEmail?: string;
   subject?: string;
   bodyText?: string;
-} = {}) {
-  const [request] = await db
+} = {}, executor: Executor = db) {
+  const [request] = await executor
     .insert(qualificationRequests)
     .values({
       sourceService: data.sourceService || "test-service",
@@ -44,9 +47,10 @@ export async function insertTestQualification(
     classification?: "willing_to_meet" | "interested" | "needs_more_info" | "not_interested" | "out_of_office" | "unsubscribe" | "bounce" | "other";
     confidence?: string;
     reasoning?: string;
-  } = {}
+  } = {},
+  executor: Executor = db,
 ) {
-  const [qualification] = await db
+  const [qualification] = await executor
     .insert(qualifications)
     .values({
       requestId,
@@ -63,9 +67,10 @@ export async function insertTestQualification(
  */
 export async function insertTestWebhookCallback(
   qualificationId: string,
-  data: { webhookUrl?: string; status?: string } = {}
+  data: { webhookUrl?: string; status?: string } = {},
+  executor: Executor = db,
 ) {
-  const [callback] = await db
+  const [callback] = await executor
     .insert(webhookCallbacks)
     .values({
       qualificationId,
