@@ -31,6 +31,36 @@ This applies when you:
 - Test-only changes (unless test commands change)
 - Dependency patch updates
 
+## Regression Tests (MANDATORY)
+
+**Every time you fix a bug or resolve an issue, you MUST create a regression test that:**
+
+1. **Reproduces the original bug** — write a test that would FAIL on the old code
+2. **Passes with the fix** — confirm the test passes after your changes
+3. **Lives in the right place:**
+   - Unit tests → `tests/unit/<module>.test.ts`
+   - Integration tests → `tests/integration/<feature>.test.ts`
+4. **Uses a clear name** — prefix with `regression:` or describe the issue, e.g.:
+   ```
+   it("regression: should not crash when reply body is empty", ...)
+   ```
+
+### When this applies
+
+- Every bugfix
+- Every issue resolution (even if it's a config/schema change — test the expected behavior)
+- Edge cases discovered during development
+
+### When this does NOT apply
+
+- Pure refactors with no behavior change
+- README/docs-only changes
+- Dependency updates with no code changes
+
+### CI enforcement
+
+All tests run in CI via `npm run test:unit` and `npm run test:integration`. If your fix doesn't have a corresponding test, the PR should not be considered complete.
+
 ## Project Conventions
 
 - TypeScript strict mode
