@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { db } from "./db/index.js";
 import healthRoutes from "./routes/health.js";
 import qualifyRoutes from "./routes/qualify.js";
 
@@ -14,9 +16,19 @@ app.use(express.json({ limit: "1mb" }));
 app.use(healthRoutes);
 app.use(qualifyRoutes);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Reply Qualification Service running on port ${PORT}`);
-});
+// Only start server if not in test environment
+if (process.env.NODE_ENV !== "test") {
+  migrate(db, { migrationsFolder: "./drizzle" })
+    .then(() => {
+      console.log("Migrations complete");
+      app.listen(Number(PORT), "::", () => {
+        console.log(`Service running on port ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error("Migration failed:", err);
+      process.exit(1);
+    });
+}
 
 export default app;
