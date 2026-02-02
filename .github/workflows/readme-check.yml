@@ -1,0 +1,41 @@
+name: README Freshness Check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  readme-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if README was updated alongside code changes
+        run: |
+          # Get files changed in this PR
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+
+          # Check if meaningful source files changed
+          CODE_CHANGED=false
+          for file in $CHANGED_FILES; do
+            case "$file" in
+              src/*|package.json|Dockerfile|.env.example|drizzle.config.ts|.github/workflows/test.yml)
+                CODE_CHANGED=true
+                break
+                ;;
+            esac
+          done
+
+          # Check if README was updated
+          README_UPDATED=false
+          if echo "$CHANGED_FILES" | grep -q "^README.md$"; then
+            README_UPDATED=true
+          fi
+
+          if [ "$CODE_CHANGED" = true ] && [ "$README_UPDATED" = false ]; then
+            echo "::warning::Source files changed but README.md was not updated. Please check if the README needs updating."
+          else
+            echo "README check passed."
+          fi
