@@ -1,14 +1,10 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import { db } from "../../src/db/index.js";
 import { qualificationRequests, qualifications, webhookCallbacks } from "../../src/db/schema.js";
 import { cleanTestData, closeDb, insertTestRequest, insertTestQualification, insertTestWebhookCallback } from "../helpers/test-db.js";
 
 describe("Reply Qualification Service Database", () => {
-  beforeEach(async () => {
-    await cleanTestData();
-  });
-
   afterAll(async () => {
     await cleanTestData();
     await closeDb();
