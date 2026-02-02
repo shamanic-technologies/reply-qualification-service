@@ -1,4 +1,8 @@
-CREATE TYPE "public"."classification" AS ENUM('willing_to_meet', 'interested', 'needs_more_info', 'not_interested', 'out_of_office', 'unsubscribe', 'bounce', 'other');--> statement-breakpoint
+DO $$ BEGIN
+ CREATE TYPE "public"."classification" AS ENUM('willing_to_meet', 'interested', 'needs_more_info', 'not_interested', 'out_of_office', 'unsubscribe', 'bounce', 'other');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "orgs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"clerk_org_id" text NOT NULL,
