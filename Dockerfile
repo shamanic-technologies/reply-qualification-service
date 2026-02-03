@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copy source
 COPY . .
@@ -21,7 +21,7 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/package*.json ./
-RUN npm install --production
+RUN npm ci --omit=dev
 
 # Expose port
 EXPOSE 3000
