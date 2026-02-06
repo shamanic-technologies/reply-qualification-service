@@ -32,6 +32,37 @@ interface QualifyRequestBody {
  * 4. Returns the qualification synchronously
  */
 router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
+  // #swagger.tags = ['Qualification']
+  // #swagger.summary = 'Qualify an email reply'
+  // #swagger.description = 'Stores the request, runs AI classification with Claude, and returns the result synchronously.'
+  // #swagger.security = [{ "apiKey": [] }]
+  /* #swagger.requestBody = {
+    required: true,
+    content: {
+      "application/json": {
+        schema: { $ref: '#/definitions/QualifyRequest' }
+      }
+    }
+  } */
+  /* #swagger.responses[200] = {
+    description: 'Qualification result',
+    content: {
+      "application/json": {
+        schema: { $ref: '#/definitions/QualifyResponse' }
+      }
+    }
+  } */
+  /* #swagger.responses[400] = {
+    description: 'Missing required fields',
+    content: {
+      "application/json": {
+        schema: { $ref: '#/definitions/Error' }
+      }
+    }
+  } */
+  /* #swagger.responses[401] = {
+    description: 'Unauthorized - invalid or missing API key'
+  } */
   try {
     const body = req.body as QualifyRequestBody;
     
@@ -107,6 +138,35 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
  * GET /qualifications/:id - Get a specific qualification by ID
  */
 router.get("/qualifications/:id", serviceAuth, async (req: AuthenticatedRequest, res) => {
+  // #swagger.tags = ['Qualification']
+  // #swagger.summary = 'Get a qualification by ID'
+  // #swagger.description = 'Fetch a specific qualification result by its UUID.'
+  // #swagger.security = [{ "apiKey": [] }]
+  /* #swagger.parameters['id'] = {
+    in: 'path',
+    required: true,
+    type: 'string',
+    description: 'Qualification UUID'
+  } */
+  /* #swagger.responses[200] = {
+    description: 'Qualification found',
+    content: {
+      "application/json": {
+        schema: { $ref: '#/definitions/QualifyResponse' }
+      }
+    }
+  } */
+  /* #swagger.responses[404] = {
+    description: 'Qualification not found',
+    content: {
+      "application/json": {
+        schema: { $ref: '#/definitions/Error' }
+      }
+    }
+  } */
+  /* #swagger.responses[401] = {
+    description: 'Unauthorized - invalid or missing API key'
+  } */
   try {
     const { id } = req.params;
     
@@ -139,6 +199,25 @@ router.get("/qualifications/:id", serviceAuth, async (req: AuthenticatedRequest,
  * GET /qualifications - List qualifications with filters
  */
 router.get("/qualifications", serviceAuth, async (req: AuthenticatedRequest, res) => {
+  // #swagger.tags = ['Qualification']
+  // #swagger.summary = 'List qualifications'
+  // #swagger.description = 'List qualifications with optional filters.'
+  // #swagger.security = [{ "apiKey": [] }]
+  /* #swagger.parameters['sourceService'] = { in: 'query', type: 'string', description: 'Filter by source service' } */
+  /* #swagger.parameters['sourceOrgId'] = { in: 'query', type: 'string', description: 'Filter by source org ID' } */
+  /* #swagger.parameters['sourceRefId'] = { in: 'query', type: 'string', description: 'Filter by source ref ID' } */
+  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Max results (default: 50)' } */
+  /* #swagger.responses[200] = {
+    description: 'List of qualifications',
+    content: {
+      "application/json": {
+        schema: { type: 'array', items: { $ref: '#/definitions/QualificationItem' } }
+      }
+    }
+  } */
+  /* #swagger.responses[401] = {
+    description: 'Unauthorized - invalid or missing API key'
+  } */
   try {
     const { sourceService, sourceOrgId, sourceRefId, limit = "50" } = req.query;
     
