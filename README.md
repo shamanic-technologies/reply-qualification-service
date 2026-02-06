@@ -52,6 +52,10 @@ Fetch a specific qualification result by ID.
 
 List qualifications with optional filters: `sourceService`, `sourceOrgId`, `sourceRefId`, `limit` (default 50).
 
+### `GET /openapi.json`
+
+Returns the OpenAPI 3.0 spec for this service. No auth required. The spec is auto-generated at build time by `swagger-autogen`.
+
 ### `GET /health`
 
 Basic health check. No auth required.
@@ -139,6 +143,7 @@ docker run -p 3000:3000 --env-file .env reply-qualification-service
 | `npm test` | Run all tests |
 | `npm run test:unit` | Run unit tests |
 | `npm run test:integration` | Run integration tests |
+| `npm run generate:openapi` | Generate OpenAPI spec |
 | `npm run db:generate` | Generate DB migrations |
 | `npm run db:migrate` | Run DB migrations |
 | `npm run db:push` | Push schema directly to DB |
