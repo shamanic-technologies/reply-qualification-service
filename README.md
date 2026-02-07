@@ -92,6 +92,7 @@ npm run dev
 | `REPLY_QUALIFICATION_SERVICE_DATABASE_URL` | Neon PostgreSQL connection string |
 | `ANTHROPIC_API_KEY` | Platform Anthropic key (used when no BYOK) |
 | `REPLY_QUALIFICATION_SERVICE_API_KEY` | Service-to-service auth key |
+| `SERVICE_URL` | Public URL for OpenAPI spec (e.g. `https://reply-qualification.mcpfactory.org`) |
 | `PORT` | Server port (default: 3000) |
 
 ## Database

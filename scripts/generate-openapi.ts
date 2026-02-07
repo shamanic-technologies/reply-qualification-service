@@ -7,14 +7,14 @@ const __dirname = dirname(__filename);
 
 const doc = {
   info: {
-    version: "0.1.0",
+    version: "1.0.0",
     title: "Reply Qualification Service",
     description:
-      "AI-powered email reply classification service. Analyzes incoming email replies using Claude AI and classifies them into actionable categories.",
+      "AI-powered email reply qualification and classification",
   },
-  host: "localhost:3000",
-  basePath: "/",
-  schemes: ["https", "http"],
+  servers: [
+    { url: process.env.SERVICE_URL || "http://localhost:3000" },
+  ],
   securityDefinitions: {
     apiKey: {
       type: "apiKey",

@@ -17,9 +17,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy built files, migrations, and production dependencies
+# Copy built files, migrations, OpenAPI spec, and production dependencies
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/openapi.json ./
 COPY --from=builder /app/package*.json ./
 RUN npm ci --omit=dev
 
