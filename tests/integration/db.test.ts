@@ -75,6 +75,45 @@ describe("Reply Qualification Service Database", () => {
     });
   });
 
+  describe("regression: service_run_id column", () => {
+    it("regression: should support service_run_id in qualification_requests", async () => {
+      const request = await insertTestRequest({
+        sourceService: "mcpfactory",
+        sourceOrgId: "org_run_test",
+        fromEmail: "lead@company.com",
+        toEmail: "sales@ourcompany.com",
+      });
+
+      // Update with a service_run_id value
+      const [updated] = await db
+        .update(qualificationRequests)
+        .set({ serviceRunId: "run_abc123" })
+        .where(eq(qualificationRequests.id, request.id))
+        .returning();
+
+      expect(updated.serviceRunId).toBe("run_abc123");
+    });
+
+    it("regression: GET /qualifications join should not fail on service_run_id", async () => {
+      // This query mirrors the GET /qualifications endpoint join
+      // which previously failed with: column qualification_requests.service_run_id does not exist
+      const results = await db
+        .select({
+          qualification: qualifications,
+          request: qualificationRequests,
+        })
+        .from(qualifications)
+        .innerJoin(
+          qualificationRequests,
+          eq(qualifications.requestId, qualificationRequests.id)
+        )
+        .limit(1);
+
+      // Should not throw - the query itself succeeding is the assertion
+      expect(results).toBeDefined();
+    });
+  });
+
   describe("webhookCallbacks table", () => {
     it("should create a webhook callback linked to qualification", async () => {
       const callback = await db.transaction(async (tx) => {

@@ -1,0 +1,1 @@
+ALTER TABLE "qualification_requests" ADD COLUMN "service_run_id" text;

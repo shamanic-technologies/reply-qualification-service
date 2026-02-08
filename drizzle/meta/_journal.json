@@ -15,6 +15,13 @@
       "when": 1770546039300,
       "tag": "0001_warm_zzzax",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770562045075,
+      "tag": "0002_quiet_ronan",
+      "breakpoints": true
     }
   ]
 }
