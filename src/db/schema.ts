@@ -13,28 +13,44 @@ export const classificationEnum = pgEnum("classification", [
 ]);
 
 // Qualification requests - stores all emails sent for qualification
-export const qualificationRequests = pgTable("qualification_requests", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  
-  // Source identification (which project/service sent this)
-  sourceService: text("source_service").notNull(), // 'mcpfactory', 'pressbeat', etc.
-  sourceOrgId: text("source_org_id").notNull(),    // Clerk org ID or similar
-  sourceRefId: text("source_ref_id"),              // Campaign run ID, pitch ID, etc.
-  
-  // Email content to qualify
-  fromEmail: text("from_email").notNull(),
-  toEmail: text("to_email").notNull(),
-  subject: text("subject"),
-  bodyText: text("body_text"),
-  bodyHtml: text("body_html"),
-  
-  // Original email reference (for threading)
-  inReplyToMessageId: text("in_reply_to_message_id"),
-  
-  // Timestamps
-  emailReceivedAt: timestamp("email_received_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const qualificationRequests = pgTable(
+  "qualification_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    // Source identification (which project/service sent this)
+    sourceService: text("source_service").notNull(), // 'mcpfactory', 'pressbeat', etc.
+    sourceOrgId: text("source_org_id").notNull(),    // Clerk org ID or similar
+    sourceRefId: text("source_ref_id"),              // Campaign run ID, pitch ID, etc.
+
+    // Context fields for filtering/aggregation
+    appId: text("app_id"),
+    clerkOrgId: text("clerk_org_id"),
+    clerkUserId: text("clerk_user_id"),
+    brandId: text("brand_id"),
+    campaignId: text("campaign_id"),
+    runId: text("run_id"),
+
+    // Email content to qualify
+    fromEmail: text("from_email").notNull(),
+    toEmail: text("to_email").notNull(),
+    subject: text("subject"),
+    bodyText: text("body_text"),
+    bodyHtml: text("body_html"),
+
+    // Original email reference (for threading)
+    inReplyToMessageId: text("in_reply_to_message_id"),
+
+    // Timestamps
+    emailReceivedAt: timestamp("email_received_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_qr_clerk_org").on(table.clerkOrgId),
+    index("idx_qr_campaign").on(table.campaignId),
+    index("idx_qr_app").on(table.appId),
+  ]
+);
 
 // Qualifications - AI analysis results
 export const qualifications = pgTable("qualifications", {

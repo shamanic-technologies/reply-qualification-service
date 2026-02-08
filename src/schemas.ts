@@ -61,6 +61,12 @@ export const QualifyRequestSchema = z
     sourceService: z.string().min(1),
     sourceOrgId: z.string().min(1),
     sourceRefId: z.string().optional(),
+    appId: z.string().optional(),
+    clerkOrgId: z.string().optional(),
+    clerkUserId: z.string().optional(),
+    brandId: z.string().optional(),
+    campaignId: z.string().optional(),
+    runId: z.string().optional(),
     fromEmail: z.string().email(),
     toEmail: z.string().email(),
     subject: z.string().optional(),
@@ -110,6 +116,27 @@ export const QualificationsQuerySchema = z.object({
   sourceRefId: z.string().optional(),
   limit: z.string().regex(/^\d+$/).optional(),
 });
+
+// --- Stats schemas ---
+
+export const StatsQuerySchema = z.object({
+  appId: z.string().optional(),
+  clerkOrgId: z.string().optional(),
+  clerkUserId: z.string().optional(),
+  brandId: z.string().optional(),
+  campaignId: z.string().optional(),
+  runId: z.string().optional(),
+});
+
+export const StatsResponseSchema = z
+  .object({
+    total: z.number(),
+    byClassification: z.record(z.string(), z.number()),
+    totalCostUsd: z.number(),
+    totalInputTokens: z.number(),
+    totalOutputTokens: z.number(),
+  })
+  .openapi("StatsResponse");
 
 export const ErrorSchema = z
   .object({
@@ -230,6 +257,30 @@ registry.registerPath({
           schema: z.array(QualificationItemSchema),
         },
       },
+    },
+    401: { description: "Unauthorized - invalid or missing API key" },
+    500: {
+      description: "Internal server error",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/stats",
+  tags: ["Stats"],
+  summary: "Aggregated qualification statistics",
+  description:
+    "Returns qualification counts by classification with optional filters.",
+  security: [{ apiKey: [] }],
+  request: {
+    query: StatsQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Aggregation result",
+      content: { "application/json": { schema: StatsResponseSchema } },
     },
     401: { description: "Unauthorized - invalid or missing API key" },
     500: {

@@ -1,10 +1,12 @@
 import express from "express";
 import healthRoutes from "../../src/routes/health.js";
+import statsRoutes from "../../src/routes/stats.js";
 
 export function createTestApp() {
   const app = express();
   app.use(express.json());
   app.use(healthRoutes);
+  app.use(statsRoutes);
   return app;
 }
 

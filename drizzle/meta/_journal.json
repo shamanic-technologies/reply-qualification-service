@@ -8,6 +8,13 @@
       "when": 1770015596906,
       "tag": "0000_good_gambit",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770546039300,
+      "tag": "0001_warm_zzzax",
+      "breakpoints": true
     }
   ]
 }

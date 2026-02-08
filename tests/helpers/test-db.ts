@@ -23,6 +23,12 @@ export async function insertTestRequest(data: {
   toEmail?: string;
   subject?: string;
   bodyText?: string;
+  appId?: string;
+  clerkOrgId?: string;
+  clerkUserId?: string;
+  brandId?: string;
+  campaignId?: string;
+  runId?: string;
 } = {}, executor: Executor = db) {
   const [request] = await executor
     .insert(qualificationRequests)
@@ -33,6 +39,12 @@ export async function insertTestRequest(data: {
       toEmail: data.toEmail || "recipient@example.com",
       subject: data.subject || "Test Subject",
       bodyText: data.bodyText || "Test body",
+      appId: data.appId,
+      clerkOrgId: data.clerkOrgId,
+      clerkUserId: data.clerkUserId,
+      brandId: data.brandId,
+      campaignId: data.campaignId,
+      runId: data.runId,
     })
     .returning();
   return request;
