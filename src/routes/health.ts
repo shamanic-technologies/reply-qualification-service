@@ -4,14 +4,7 @@ import { sql } from "drizzle-orm";
 
 const router = Router();
 
-router.get("/health", (req, res) => {
-  // #swagger.tags = ['Health']
-  // #swagger.summary = 'Health check'
-  // #swagger.description = 'Basic health check endpoint'
-  /* #swagger.responses[200] = {
-    description: 'Service is healthy',
-    schema: { $ref: '#/definitions/HealthResponse' }
-  } */
+router.get("/health", (_req, res) => {
   res.json({
     status: "ok",
     service: "reply-qualification-service",
@@ -19,10 +12,7 @@ router.get("/health", (req, res) => {
   });
 });
 
-router.get("/health/debug", async (req, res) => {
-  // #swagger.tags = ['Health']
-  // #swagger.summary = 'Debug health check'
-  // #swagger.description = 'Shows env var configuration status and DB connection'
+router.get("/health/debug", async (_req, res) => {
   const apiKey = process.env.REPLY_QUALIFICATION_SERVICE_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const dbUrl = process.env.REPLY_QUALIFICATION_SERVICE_DATABASE_URL;

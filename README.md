@@ -54,7 +54,7 @@ List qualifications with optional filters: `sourceService`, `sourceOrgId`, `sour
 
 ### `GET /openapi.json`
 
-Returns the OpenAPI 3.0 spec for this service. No auth required. The spec is auto-generated at build time by `swagger-autogen`.
+Returns the OpenAPI 3.0 spec for this service. No auth required. The spec is generated at build time from Zod schemas via `@asteasolutions/zod-to-openapi`.
 
 ### `GET /health`
 
@@ -139,7 +139,7 @@ docker run -p 3000:3000 --env-file .env reply-qualification-service
 | Script | Description |
 |---|---|
 | `npm run dev` | Start dev server with hot reload |
-| `npm run build` | Compile TypeScript |
+| `npm run build` | Compile TypeScript + generate OpenAPI spec |
 | `npm start` | Run compiled output |
 | `npm test` | Run all tests |
 | `npm run test:unit` | Run unit tests |
@@ -157,4 +157,5 @@ docker run -p 3000:3000 --env-file .env reply-qualification-service
 - **ORM:** Drizzle ORM + PostgreSQL (Neon)
 - **AI:** Anthropic Claude 3 Haiku
 - **Testing:** Vitest + Supertest
+- **Validation:** Zod + `@asteasolutions/zod-to-openapi`
 - **CI:** GitHub Actions (unit + integration tests on push/PR to main)

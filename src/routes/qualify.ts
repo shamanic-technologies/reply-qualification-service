@@ -4,27 +4,16 @@ import { qualificationRequests, qualifications } from "../db/schema.js";
 import { serviceAuth, AuthenticatedRequest } from "../middleware/auth.js";
 import { qualifyReply } from "../lib/anthropic.js";
 import { eq } from "drizzle-orm";
+import {
+  QualifyRequestSchema,
+  QualificationsQuerySchema,
+} from "../schemas.js";
 
 const router = Router();
 
-interface QualifyRequestBody {
-  sourceService: string;
-  sourceOrgId: string;
-  sourceRefId?: string;
-  fromEmail: string;
-  toEmail: string;
-  subject?: string;
-  bodyText?: string;
-  bodyHtml?: string;
-  inReplyToMessageId?: string;
-  emailReceivedAt?: string;
-  webhookUrl?: string; // Optional callback URL for async notification
-  byokApiKey?: string; // Optional BYOK Anthropic key (mcpfactory uses user's key, pressbeat uses platform key)
-}
-
 /**
  * POST /qualify - Qualify an email reply using AI
- * 
+ *
  * This endpoint:
  * 1. Stores the qualification request
  * 2. Runs AI classification
@@ -32,47 +21,17 @@ interface QualifyRequestBody {
  * 4. Returns the qualification synchronously
  */
 router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
-  // #swagger.tags = ['Qualification']
-  // #swagger.summary = 'Qualify an email reply'
-  // #swagger.description = 'Stores the request, runs AI classification with Claude, and returns the result synchronously.'
-  // #swagger.security = [{ "apiKey": [] }]
-  /* #swagger.requestBody = {
-    required: true,
-    content: {
-      "application/json": {
-        schema: { $ref: '#/definitions/QualifyRequest' }
-      }
-    }
-  } */
-  /* #swagger.responses[200] = {
-    description: 'Qualification result',
-    content: {
-      "application/json": {
-        schema: { $ref: '#/definitions/QualifyResponse' }
-      }
-    }
-  } */
-  /* #swagger.responses[400] = {
-    description: 'Missing required fields',
-    content: {
-      "application/json": {
-        schema: { $ref: '#/definitions/Error' }
-      }
-    }
-  } */
-  /* #swagger.responses[401] = {
-    description: 'Unauthorized - invalid or missing API key'
-  } */
   try {
-    const body = req.body as QualifyRequestBody;
-    
-    // Validate required fields
-    if (!body.sourceService || !body.sourceOrgId || !body.fromEmail || !body.toEmail) {
+    const parsed = QualifyRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
       return res.status(400).json({
-        error: "Missing required fields: sourceService, sourceOrgId, fromEmail, toEmail",
+        error: "Invalid request",
+        details: parsed.error.flatten(),
       });
     }
-    
+
+    const body = parsed.data;
+
     // Store the request
     const [request] = await db
       .insert(qualificationRequests)
@@ -86,18 +45,20 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
         bodyText: body.bodyText,
         bodyHtml: body.bodyHtml,
         inReplyToMessageId: body.inReplyToMessageId,
-        emailReceivedAt: body.emailReceivedAt ? new Date(body.emailReceivedAt) : null,
+        emailReceivedAt: body.emailReceivedAt
+          ? new Date(body.emailReceivedAt)
+          : null,
       })
       .returning();
-    
+
     // Run AI qualification (supports BYOK - if byokApiKey provided, uses that instead of platform key)
     const result = await qualifyReply({
       subject: body.subject || null,
       bodyText: body.bodyText || null,
       bodyHtml: body.bodyHtml || null,
-      byokApiKey: body.byokApiKey, // Optional: mcpfactory passes user's key, pressbeat omits
+      byokApiKey: body.byokApiKey,
     });
-    
+
     // Store the qualification
     const [qualification] = await db
       .insert(qualifications)
@@ -115,7 +76,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
         responseRaw: result.responseRaw,
       })
       .returning();
-    
+
     res.json({
       id: qualification.id,
       requestId: request.id,
@@ -125,7 +86,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       suggestedAction: qualification.suggestedAction,
       extractedDetails: qualification.extractedDetails,
       costUsd: parseFloat(String(qualification.costUsd)),
-      usedByok: result.usedByok, // true if user's BYOK key was used
+      usedByok: result.usedByok,
       createdAt: qualification.createdAt,
     });
   } catch (error) {
@@ -137,125 +98,91 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
 /**
  * GET /qualifications/:id - Get a specific qualification by ID
  */
-router.get("/qualifications/:id", serviceAuth, async (req: AuthenticatedRequest, res) => {
-  // #swagger.tags = ['Qualification']
-  // #swagger.summary = 'Get a qualification by ID'
-  // #swagger.description = 'Fetch a specific qualification result by its UUID.'
-  // #swagger.security = [{ "apiKey": [] }]
-  /* #swagger.parameters['id'] = {
-    in: 'path',
-    required: true,
-    type: 'string',
-    description: 'Qualification UUID'
-  } */
-  /* #swagger.responses[200] = {
-    description: 'Qualification found',
-    content: {
-      "application/json": {
-        schema: { $ref: '#/definitions/QualifyResponse' }
+router.get(
+  "/qualifications/:id",
+  serviceAuth,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { id } = req.params;
+
+      const qualification = await db.query.qualifications.findFirst({
+        where: eq(qualifications.id, id),
+      });
+
+      if (!qualification) {
+        return res.status(404).json({ error: "Qualification not found" });
       }
+
+      res.json({
+        id: qualification.id,
+        requestId: qualification.requestId,
+        classification: qualification.classification,
+        confidence: parseFloat(String(qualification.confidence)),
+        reasoning: qualification.reasoning,
+        suggestedAction: qualification.suggestedAction,
+        extractedDetails: qualification.extractedDetails,
+        costUsd: parseFloat(String(qualification.costUsd || 0)),
+        createdAt: qualification.createdAt,
+      });
+    } catch (error) {
+      console.error("Get qualification error:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
-  } */
-  /* #swagger.responses[404] = {
-    description: 'Qualification not found',
-    content: {
-      "application/json": {
-        schema: { $ref: '#/definitions/Error' }
-      }
-    }
-  } */
-  /* #swagger.responses[401] = {
-    description: 'Unauthorized - invalid or missing API key'
-  } */
-  try {
-    const { id } = req.params;
-    
-    const qualification = await db.query.qualifications.findFirst({
-      where: eq(qualifications.id, id),
-    });
-    
-    if (!qualification) {
-      return res.status(404).json({ error: "Qualification not found" });
-    }
-    
-    res.json({
-      id: qualification.id,
-      requestId: qualification.requestId,
-      classification: qualification.classification,
-      confidence: parseFloat(String(qualification.confidence)),
-      reasoning: qualification.reasoning,
-      suggestedAction: qualification.suggestedAction,
-      extractedDetails: qualification.extractedDetails,
-      costUsd: parseFloat(String(qualification.costUsd || 0)),
-      createdAt: qualification.createdAt,
-    });
-  } catch (error) {
-    console.error("Get qualification error:", error);
-    res.status(500).json({ error: "Internal server error" });
   }
-});
+);
 
 /**
  * GET /qualifications - List qualifications with filters
  */
-router.get("/qualifications", serviceAuth, async (req: AuthenticatedRequest, res) => {
-  // #swagger.tags = ['Qualification']
-  // #swagger.summary = 'List qualifications'
-  // #swagger.description = 'List qualifications with optional filters.'
-  // #swagger.security = [{ "apiKey": [] }]
-  /* #swagger.parameters['sourceService'] = { in: 'query', type: 'string', description: 'Filter by source service' } */
-  /* #swagger.parameters['sourceOrgId'] = { in: 'query', type: 'string', description: 'Filter by source org ID' } */
-  /* #swagger.parameters['sourceRefId'] = { in: 'query', type: 'string', description: 'Filter by source ref ID' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Max results (default: 50)' } */
-  /* #swagger.responses[200] = {
-    description: 'List of qualifications',
-    content: {
-      "application/json": {
-        schema: { type: 'array', items: { $ref: '#/definitions/QualificationItem' } }
-      }
+router.get(
+  "/qualifications",
+  serviceAuth,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const parsed = QualificationsQuerySchema.safeParse(req.query);
+      const { sourceOrgId, limit = "50" } = parsed.success
+        ? parsed.data
+        : (req.query as Record<string, string>);
+
+      // Build query with joins
+      const results = await db
+        .select({
+          qualification: qualifications,
+          request: qualificationRequests,
+        })
+        .from(qualifications)
+        .innerJoin(
+          qualificationRequests,
+          eq(qualifications.requestId, qualificationRequests.id)
+        )
+        .where(
+          sourceOrgId
+            ? eq(qualificationRequests.sourceOrgId, String(sourceOrgId))
+            : undefined
+        )
+        .limit(parseInt(String(limit)))
+        .orderBy(qualifications.createdAt);
+
+      res.json(
+        results.map((r) => ({
+          id: r.qualification.id,
+          requestId: r.request.id,
+          sourceService: r.request.sourceService,
+          sourceOrgId: r.request.sourceOrgId,
+          sourceRefId: r.request.sourceRefId,
+          fromEmail: r.request.fromEmail,
+          subject: r.request.subject,
+          classification: r.qualification.classification,
+          confidence: parseFloat(String(r.qualification.confidence)),
+          suggestedAction: r.qualification.suggestedAction,
+          createdAt: r.qualification.createdAt,
+        }))
+      );
+    } catch (error) {
+      console.error("List qualifications error:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
-  } */
-  /* #swagger.responses[401] = {
-    description: 'Unauthorized - invalid or missing API key'
-  } */
-  try {
-    const { sourceService, sourceOrgId, sourceRefId, limit = "50" } = req.query;
-    
-    // Build query with joins
-    const results = await db
-      .select({
-        qualification: qualifications,
-        request: qualificationRequests,
-      })
-      .from(qualifications)
-      .innerJoin(qualificationRequests, eq(qualifications.requestId, qualificationRequests.id))
-      .where(
-        sourceOrgId
-          ? eq(qualificationRequests.sourceOrgId, String(sourceOrgId))
-          : undefined
-      )
-      .limit(parseInt(String(limit)))
-      .orderBy(qualifications.createdAt);
-    
-    res.json(
-      results.map((r) => ({
-        id: r.qualification.id,
-        requestId: r.request.id,
-        sourceService: r.request.sourceService,
-        sourceOrgId: r.request.sourceOrgId,
-        sourceRefId: r.request.sourceRefId,
-        fromEmail: r.request.fromEmail,
-        subject: r.request.subject,
-        classification: r.qualification.classification,
-        confidence: parseFloat(String(r.qualification.confidence)),
-        suggestedAction: r.qualification.suggestedAction,
-        createdAt: r.qualification.createdAt,
-      }))
-    );
-  } catch (error) {
-    console.error("List qualifications error:", error);
-    res.status(500).json({ error: "Internal server error" });
   }
-});
+);
 
 export default router;
