@@ -7,6 +7,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { db } from "./db/index.js";
 import healthRoutes from "./routes/health.js";
 import qualifyRoutes from "./routes/qualify.js";
+import statsRoutes from "./routes/stats.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,6 +36,7 @@ app.get("/openapi.json", (_req, res) => {
 // Routes
 app.use(healthRoutes);
 app.use(qualifyRoutes);
+app.use(statsRoutes);
 
 // Only start server if not in test environment
 if (process.env.NODE_ENV !== "test") {

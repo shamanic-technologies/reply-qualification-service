@@ -25,6 +25,12 @@ Classify an email reply. Stores the request, runs AI classification, returns the
 | `inReplyToMessageId` | No | Original message ID for threading |
 | `emailReceivedAt` | No | ISO 8601 timestamp |
 | `webhookUrl` | No | Callback URL for async notification |
+| `appId` | No | Calling application identifier |
+| `clerkOrgId` | No | Clerk organization ID |
+| `clerkUserId` | No | Clerk user ID |
+| `brandId` | No | Brand identifier |
+| `campaignId` | No | Campaign identifier |
+| `runId` | No | Run identifier |
 | `byokApiKey` | No | User's own Anthropic API key (BYOK) |
 
 **Response:**
@@ -51,6 +57,37 @@ Fetch a specific qualification result by ID.
 ### `GET /qualifications`
 
 List qualifications with optional filters: `sourceService`, `sourceOrgId`, `sourceRefId`, `limit` (default 50).
+
+### `GET /stats`
+
+Aggregated qualification statistics with optional filters.
+
+**Query parameters (all optional):**
+
+| Param | Description |
+|---|---|
+| `appId` | Filter by application identifier |
+| `clerkOrgId` | Filter by Clerk organization ID |
+| `clerkUserId` | Filter by Clerk user ID |
+| `brandId` | Filter by brand identifier |
+| `campaignId` | Filter by campaign identifier |
+| `runId` | Filter by run identifier |
+
+**Response:**
+
+```json
+{
+  "total": 1234,
+  "byClassification": {
+    "willing_to_meet": 45,
+    "interested": 200,
+    "not_interested": 500
+  },
+  "totalCostUsd": 1.234567,
+  "totalInputTokens": 500000,
+  "totalOutputTokens": 125000
+}
+```
 
 ### `GET /openapi.json`
 
