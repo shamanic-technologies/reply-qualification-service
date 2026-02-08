@@ -30,7 +30,7 @@ Classify an email reply. Stores the request, runs AI classification, returns the
 | `clerkUserId` | No | Clerk user ID |
 | `brandId` | No | Brand identifier |
 | `campaignId` | No | Campaign identifier |
-| `runId` | No | Run identifier |
+| `runId` | No | Parent run identifier (becomes `parentRunId` in RunsService) |
 | `byokApiKey` | No | User's own Anthropic API key (BYOK) |
 
 **Response:**
@@ -46,6 +46,7 @@ Classify an email reply. Stores the request, runs AI classification, returns the
   "extractedDetails": { "meeting_preference": "Tuesday afternoon" },
   "costUsd": 0.000123,
   "usedByok": false,
+  "serviceRunId": "uuid-or-null",
   "createdAt": "2025-01-01T00:00:00.000Z"
 }
 ```
@@ -129,6 +130,8 @@ npm run dev
 | `REPLY_QUALIFICATION_SERVICE_DATABASE_URL` | Neon PostgreSQL connection string |
 | `ANTHROPIC_API_KEY` | Platform Anthropic key (used when no BYOK) |
 | `REPLY_QUALIFICATION_SERVICE_API_KEY` | Service-to-service auth key |
+| `RUNS_SERVICE_URL` | RunsService base URL (default: `https://runs.mcpfactory.org`) |
+| `RUNS_SERVICE_API_KEY` | API key for RunsService |
 | `SERVICE_URL` | Public URL for OpenAPI spec (e.g. `https://reply-qualification.mcpfactory.org`) |
 | `PORT` | Server port (default: 3000) |
 
@@ -136,7 +139,9 @@ npm run dev
 
 Uses Drizzle ORM with PostgreSQL (Neon). Migrations run automatically on startup.
 
-**Tables:** `qualification_requests`, `qualifications`, `webhook_callbacks`, `users`, `orgs`, `tasks`, `tasks_runs`, `tasks_runs_costs`
+**Tables:** `qualification_requests`, `qualifications`, `webhook_callbacks`
+
+Run tracking and cost logging are delegated to [RunsService](https://runs.mcpfactory.org) — the `serviceRunId` column in `qualification_requests` links back to the external run.
 
 ```bash
 npm run db:generate   # Generate migrations from schema changes

@@ -90,6 +90,7 @@ export const QualifyResponseSchema = z
     extractedDetails: z.record(z.string(), z.unknown()).nullable(),
     costUsd: z.number(),
     usedByok: z.boolean().optional(),
+    serviceRunId: z.string().uuid().nullable().optional(),
     createdAt: z.string().or(z.date()),
   })
   .openapi("QualifyResponse");

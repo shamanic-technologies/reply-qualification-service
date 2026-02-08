@@ -3,6 +3,7 @@ import { db } from "../db/index.js";
 import { qualificationRequests, qualifications } from "../db/schema.js";
 import { serviceAuth, AuthenticatedRequest } from "../middleware/auth.js";
 import { qualifyReply } from "../lib/anthropic.js";
+import { createRun, addCosts, updateRunStatus } from "../lib/runs-service.js";
 import { eq } from "drizzle-orm";
 import {
   QualifyRequestSchema,
@@ -32,6 +33,24 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
 
     const body = parsed.data;
 
+    // Create a run in RunsService if we have clerkOrgId
+    let serviceRunId: string | null = null;
+    if (body.clerkOrgId) {
+      try {
+        const run = await createRun({
+          clerkOrgId: body.clerkOrgId,
+          clerkUserId: body.clerkUserId,
+          appId: body.appId || "mcpfactory",
+          brandId: body.brandId,
+          campaignId: body.campaignId,
+          parentRunId: body.runId,
+        });
+        serviceRunId = run.id;
+      } catch (err) {
+        console.error("RunsService createRun failed:", err);
+      }
+    }
+
     // Store the request
     const [request] = await db
       .insert(qualificationRequests)
@@ -45,6 +64,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
         brandId: body.brandId,
         campaignId: body.campaignId,
         runId: body.runId,
+        serviceRunId,
         fromEmail: body.fromEmail,
         toEmail: body.toEmail,
         subject: body.subject,
@@ -58,12 +78,46 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       .returning();
 
     // Run AI qualification (supports BYOK - if byokApiKey provided, uses that instead of platform key)
-    const result = await qualifyReply({
-      subject: body.subject || null,
-      bodyText: body.bodyText || null,
-      bodyHtml: body.bodyHtml || null,
-      byokApiKey: body.byokApiKey,
-    });
+    let result;
+    try {
+      result = await qualifyReply({
+        subject: body.subject || null,
+        bodyText: body.bodyText || null,
+        bodyHtml: body.bodyHtml || null,
+        byokApiKey: body.byokApiKey,
+      });
+    } catch (error) {
+      // Mark run as failed in RunsService
+      if (serviceRunId) {
+        updateRunStatus(serviceRunId, "failed").catch((err) =>
+          console.error("RunsService updateRunStatus failed:", err)
+        );
+      }
+      throw error;
+    }
+
+    // Log costs to RunsService
+    if (serviceRunId) {
+      try {
+        await addCosts(serviceRunId, [
+          {
+            costName: "anthropic-haiku-4.5-tokens-input",
+            quantity: result.inputTokens,
+          },
+          {
+            costName: "anthropic-haiku-4.5-tokens-output",
+            quantity: result.outputTokens,
+          },
+        ]);
+      } catch (err) {
+        console.error("RunsService addCosts failed:", err);
+      }
+
+      // Mark run as completed
+      updateRunStatus(serviceRunId, "completed").catch((err) =>
+        console.error("RunsService updateRunStatus failed:", err)
+      );
+    }
 
     // Store the qualification
     const [qualification] = await db
@@ -93,6 +147,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       extractedDetails: qualification.extractedDetails,
       costUsd: parseFloat(String(qualification.costUsd)),
       usedByok: result.usedByok,
+      serviceRunId,
       createdAt: qualification.createdAt,
     });
   } catch (error) {
