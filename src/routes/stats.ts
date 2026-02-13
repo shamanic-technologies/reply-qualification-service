@@ -22,6 +22,14 @@ router.get("/stats", serviceAuth, async (req: AuthenticatedRequest, res) => {
 
     const filters = parsed.data;
 
+    // Require at least one filter to prevent unscoped global queries
+    const hasFilter = Object.values(filters).some((v) => v !== undefined);
+    if (!hasFilter) {
+      return res.status(400).json({
+        error: "At least one filter parameter is required (appId, clerkOrgId, clerkUserId, brandId, campaignId, or runId)",
+      });
+    }
+
     // Build WHERE conditions dynamically
     const conditions = [];
     if (filters.appId)

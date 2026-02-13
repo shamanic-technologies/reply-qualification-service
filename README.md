@@ -61,9 +61,9 @@ List qualifications with optional filters: `sourceService`, `sourceOrgId`, `sour
 
 ### `GET /stats`
 
-Aggregated qualification statistics with optional filters.
+Aggregated qualification statistics. **At least one filter parameter is required** to prevent unscoped global queries.
 
-**Query parameters (all optional):**
+**Query parameters (at least one required):**
 
 | Param | Description |
 |---|---|

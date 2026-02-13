@@ -55,15 +55,21 @@ describe("GET /stats", () => {
     await closeDb();
   });
 
-  it("should return stats for all qualifications when no filter", async () => {
+  it("should reject requests with no filter to prevent unscoped queries", async () => {
     const res = await request(app).get("/stats").set(getAuthHeaders());
-    expect(res.status).toBe(200);
-    expect(res.body.total).toBe(3);
-    expect(res.body.byClassification.interested).toBe(2);
-    expect(res.body.byClassification.not_interested).toBe(1);
-    expect(res.body.totalCostUsd).toBeTypeOf("number");
-    expect(res.body.totalInputTokens).toBeTypeOf("number");
-    expect(res.body.totalOutputTokens).toBeTypeOf("number");
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/at least one filter/i);
+  });
+
+  it("regression: should not return global data without filters (test data leak)", async () => {
+    // Previously, calling /stats without filters returned ALL rows including test data,
+    // which caused the dashboard to show fake reply classifications (42 willing_to_meet,
+    // 42 not_interested) when there were actually 0 replies.
+    // Root cause: CI integration tests wrote to production DB due to misconfigured
+    // REPLY_QUALIFICATION_SERVICE_DATABASE_URL_DEV secret pointing to prod instead of dev.
+    const res = await request(app).get("/stats").set(getAuthHeaders());
+    expect(res.status).toBe(400);
+    expect(res.body.total).toBeUndefined();
   });
 
   it("should filter by clerkOrgId", async () => {
