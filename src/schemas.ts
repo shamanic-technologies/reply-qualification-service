@@ -216,6 +216,7 @@ registry.registerPath({
 registry.registerPath({
   method: "get",
   path: "/qualifications/{id}",
+
   tags: ["Qualification"],
   summary: "Get a qualification by ID",
   description: "Fetch a specific qualification result by its UUID.",
@@ -273,7 +274,7 @@ registry.registerPath({
   tags: ["Stats"],
   summary: "Aggregated qualification statistics",
   description:
-    "Returns qualification counts by classification with optional filters.",
+    "Returns qualification counts by classification. At least one filter parameter is required.",
   security: [{ apiKey: [] }],
   request: {
     query: StatsQuerySchema,
@@ -282,6 +283,10 @@ registry.registerPath({
     200: {
       description: "Aggregation result",
       content: { "application/json": { schema: StatsResponseSchema } },
+    },
+    400: {
+      description: "At least one filter parameter is required",
+      content: { "application/json": { schema: ValidationErrorSchema } },
     },
     401: { description: "Unauthorized - invalid or missing API key" },
     500: {
