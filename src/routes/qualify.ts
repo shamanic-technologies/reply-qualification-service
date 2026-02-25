@@ -4,6 +4,7 @@ import { qualificationRequests, qualifications } from "../db/schema.js";
 import { serviceAuth, AuthenticatedRequest } from "../middleware/auth.js";
 import { qualifyReply } from "../lib/anthropic.js";
 import { createRun, addCosts, updateRunStatus } from "../lib/runs-service.js";
+import { resolveAnthropicKey } from "../lib/key-service.js";
 import { eq } from "drizzle-orm";
 import {
   QualifyRequestSchema,
@@ -77,14 +78,40 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       })
       .returning();
 
-    // Run AI qualification (supports BYOK - if byokApiKey provided, uses that instead of platform key)
+    // Resolve Anthropic API key from key-service (BYOK first, then app key fallback)
+    let anthropicApiKey: string;
+    let usedByok: boolean;
+    try {
+      const resolved = await resolveAnthropicKey({
+        clerkOrgId: body.clerkOrgId,
+        appId: body.appId,
+        callerContext: {
+          callerService: "reply-qualification-service",
+          callerMethod: "POST",
+          callerPath: "/qualify",
+        },
+      });
+      anthropicApiKey = resolved.apiKey;
+      usedByok = resolved.usedByok;
+    } catch (err) {
+      console.error("Key resolution failed:", err);
+      if (serviceRunId) {
+        updateRunStatus(serviceRunId, "failed").catch((e) =>
+          console.error("RunsService updateRunStatus failed:", e)
+        );
+      }
+      return res.status(502).json({ error: "Failed to resolve API key from key-service" });
+    }
+
+    // Run AI qualification
     let result;
     try {
       result = await qualifyReply({
         subject: body.subject || null,
         bodyText: body.bodyText || null,
         bodyHtml: body.bodyHtml || null,
-        byokApiKey: body.byokApiKey,
+        anthropicApiKey,
+        usedByok,
       });
     } catch (error) {
       // Mark run as failed in RunsService

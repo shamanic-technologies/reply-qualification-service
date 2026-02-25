@@ -31,7 +31,6 @@ Classify an email reply. Stores the request, runs AI classification, returns the
 | `brandId` | No | Brand identifier |
 | `campaignId` | No | Campaign identifier |
 | `runId` | No | Parent run identifier (becomes `parentRunId` in RunsService) |
-| `byokApiKey` | No | User's own Anthropic API key (BYOK) |
 
 **Response:**
 
@@ -128,7 +127,8 @@ npm run dev
 | Variable | Description |
 |---|---|
 | `REPLY_QUALIFICATION_SERVICE_DATABASE_URL` | Neon PostgreSQL connection string |
-| `ANTHROPIC_API_KEY` | Platform Anthropic key (used when no BYOK) |
+| `KEY_SERVICE_URL` | Key-service base URL (default: `https://keys.mcpfactory.org`) |
+| `KEY_SERVICE_API_KEY` | API key for key-service |
 | `REPLY_QUALIFICATION_SERVICE_API_KEY` | Service-to-service auth key |
 | `RUNS_SERVICE_URL` | RunsService base URL (default: `https://runs.mcpfactory.org`) |
 | `RUNS_SERVICE_API_KEY` | API key for RunsService |
@@ -151,7 +151,7 @@ npm run db:studio     # Open Drizzle Studio
 
 ## BYOK (Bring Your Own Key)
 
-MCPFactory users pass their own Anthropic API key via `byokApiKey` in the request body. Pressbeat uses the platform key. Cost tracking applies to both.
+API keys are resolved through key-service at request time. When `clerkOrgId` is provided, the service first attempts to decrypt the org's BYOK Anthropic key. If not found, it falls back to the platform app key. No raw API keys are sent in request bodies. Cost tracking applies to both BYOK and platform keys.
 
 ## Auth
 
@@ -197,7 +197,8 @@ docker run -p 3000:3000 --env-file .env reply-qualification-service
 - **Runtime:** Node 20, TypeScript (strict mode)
 - **Framework:** Express 4
 - **ORM:** Drizzle ORM + PostgreSQL (Neon)
-- **AI:** Anthropic Claude 3 Haiku
+- **AI:** Anthropic Claude 3 Haiku (keys resolved via key-service)
+- **Key Management:** key-service (BYOK + platform key resolution)
 - **Testing:** Vitest + Supertest
 - **Validation:** Zod + `@asteasolutions/zod-to-openapi`
 - **CI:** GitHub Actions (unit + integration tests on push/PR to main)
