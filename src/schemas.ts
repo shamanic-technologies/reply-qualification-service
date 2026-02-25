@@ -47,8 +47,7 @@ export const HealthDebugResponseSchema = z
     apiKeyConfigured: z.boolean(),
     apiKeyLength: z.number(),
     apiKeyPrefix: z.string(),
-    anthropicKeyConfigured: z.boolean(),
-    anthropicKeyPrefix: z.string(),
+    keyServiceConfigured: z.boolean(),
     dbUrlConfigured: z.boolean(),
     dbStatus: z.string(),
   })
@@ -75,7 +74,6 @@ export const QualifyRequestSchema = z
     inReplyToMessageId: z.string().optional(),
     emailReceivedAt: z.string().optional(),
     webhookUrl: z.string().url().optional(),
-    byokApiKey: z.string().optional(),
   })
   .openapi("QualifyRequest");
 
