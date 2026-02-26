@@ -53,11 +53,11 @@ async function keyServiceFetch<T>(
 
 export async function decryptOrgKey(
   provider: string,
-  clerkOrgId: string,
+  orgId: string,
   callerContext: CallerContext
 ): Promise<DecryptKeyResponse | null> {
   return keyServiceFetch<DecryptKeyResponse>(
-    `/internal/keys/${encodeURIComponent(provider)}/decrypt?clerkOrgId=${encodeURIComponent(clerkOrgId)}`,
+    `/internal/keys/${encodeURIComponent(provider)}/decrypt?orgId=${encodeURIComponent(orgId)}`,
     callerContext
   );
 }
@@ -74,15 +74,15 @@ export async function decryptAppKey(
 }
 
 export async function resolveAnthropicKey(params: {
-  clerkOrgId?: string;
+  orgId?: string;
   appId?: string;
   callerContext: CallerContext;
 }): Promise<{ apiKey: string; usedByok: boolean }> {
-  const { clerkOrgId, appId, callerContext } = params;
+  const { orgId, appId, callerContext } = params;
 
-  // Try BYOK first if clerkOrgId is provided
-  if (clerkOrgId) {
-    const byokResult = await decryptOrgKey("anthropic", clerkOrgId, callerContext);
+  // Try BYOK first if orgId is provided
+  if (orgId) {
+    const byokResult = await decryptOrgKey("anthropic", orgId, callerContext);
     if (byokResult) {
       return { apiKey: byokResult.key, usedByok: true };
     }
@@ -99,6 +99,6 @@ export async function resolveAnthropicKey(params: {
   }
 
   throw new Error(
-    `No Anthropic key found: neither BYOK for org "${clerkOrgId || "none"}" nor app key for "${appId || "reply-qualification-service"}" is configured in key-service`
+    `No Anthropic key found: neither BYOK for org "${orgId || "none"}" nor app key for "${appId || "reply-qualification-service"}" is configured in key-service`
   );
 }

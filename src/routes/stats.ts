@@ -26,7 +26,7 @@ router.get("/stats", serviceAuth, async (req: AuthenticatedRequest, res) => {
     const hasFilter = Object.values(filters).some((v) => v !== undefined);
     if (!hasFilter) {
       return res.status(400).json({
-        error: "At least one filter parameter is required (appId, clerkOrgId, clerkUserId, brandId, campaignId, or runId)",
+        error: "At least one filter parameter is required (appId, orgId, userId, brandId, campaignId, or runId)",
       });
     }
 
@@ -34,11 +34,11 @@ router.get("/stats", serviceAuth, async (req: AuthenticatedRequest, res) => {
     const conditions = [];
     if (filters.appId)
       conditions.push(eq(qualificationRequests.appId, filters.appId));
-    if (filters.clerkOrgId)
-      conditions.push(eq(qualificationRequests.clerkOrgId, filters.clerkOrgId));
-    if (filters.clerkUserId)
+    if (filters.orgId)
+      conditions.push(eq(qualificationRequests.orgId, filters.orgId));
+    if (filters.userId)
       conditions.push(
-        eq(qualificationRequests.clerkUserId, filters.clerkUserId)
+        eq(qualificationRequests.userId, filters.userId)
       );
     if (filters.brandId)
       conditions.push(eq(qualificationRequests.brandId, filters.brandId));

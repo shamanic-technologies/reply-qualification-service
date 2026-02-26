@@ -22,6 +22,13 @@
       "when": 1770562045075,
       "tag": "0002_quiet_ronan",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772092800000,
+      "tag": "0003_rename_clerk_ids",
+      "breakpoints": true
     }
   ]
 }

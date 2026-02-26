@@ -20,13 +20,13 @@ export const qualificationRequests = pgTable(
 
     // Source identification (which project/service sent this)
     sourceService: text("source_service").notNull(), // 'mcpfactory', 'pressbeat', etc.
-    sourceOrgId: text("source_org_id").notNull(),    // Clerk org ID or similar
+    sourceOrgId: text("source_org_id").notNull(),    // Source organization identifier
     sourceRefId: text("source_ref_id"),              // Campaign run ID, pitch ID, etc.
 
     // Context fields for filtering/aggregation
     appId: text("app_id"),
-    clerkOrgId: text("clerk_org_id"),
-    clerkUserId: text("clerk_user_id"),
+    orgId: text("org_id"),
+    userId: text("user_id"),
     brandId: text("brand_id"),
     campaignId: text("campaign_id"),
     runId: text("run_id"),                    // parent run ID (from caller)
@@ -47,7 +47,7 @@ export const qualificationRequests = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    index("idx_qr_clerk_org").on(table.clerkOrgId),
+    index("idx_qr_org").on(table.orgId),
     index("idx_qr_campaign").on(table.campaignId),
     index("idx_qr_app").on(table.appId),
   ]

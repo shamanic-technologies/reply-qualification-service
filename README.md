@@ -15,7 +15,7 @@ Classify an email reply. Stores the request, runs AI classification, returns the
 | Field | Required | Description |
 |---|---|---|
 | `sourceService` | Yes | Service name (`mcpfactory`, `pressbeat`, etc.) |
-| `sourceOrgId` | Yes | Clerk org ID or similar |
+| `sourceOrgId` | Yes | Source organization identifier |
 | `sourceRefId` | No | Campaign run ID, pitch ID, etc. |
 | `fromEmail` | Yes | Sender email address |
 | `toEmail` | Yes | Recipient email address |
@@ -26,8 +26,8 @@ Classify an email reply. Stores the request, runs AI classification, returns the
 | `emailReceivedAt` | No | ISO 8601 timestamp |
 | `webhookUrl` | No | Callback URL for async notification |
 | `appId` | No | Calling application identifier |
-| `clerkOrgId` | No | Clerk organization ID |
-| `clerkUserId` | No | Clerk user ID |
+| `orgId` | No | Organization identifier |
+| `userId` | No | User identifier |
 | `brandId` | No | Brand identifier |
 | `campaignId` | No | Campaign identifier |
 | `runId` | No | Parent run identifier (becomes `parentRunId` in RunsService) |
@@ -67,8 +67,8 @@ Aggregated qualification statistics. **At least one filter parameter is required
 | Param | Description |
 |---|---|
 | `appId` | Filter by application identifier |
-| `clerkOrgId` | Filter by Clerk organization ID |
-| `clerkUserId` | Filter by Clerk user ID |
+| `orgId` | Filter by organization identifier |
+| `userId` | Filter by user identifier |
 | `brandId` | Filter by brand identifier |
 | `campaignId` | Filter by campaign identifier |
 | `runId` | Filter by run identifier |
@@ -151,7 +151,7 @@ npm run db:studio     # Open Drizzle Studio
 
 ## BYOK (Bring Your Own Key)
 
-API keys are resolved through key-service at request time. When `clerkOrgId` is provided, the service first attempts to decrypt the org's BYOK Anthropic key. If not found, it falls back to the platform app key. No raw API keys are sent in request bodies. Cost tracking applies to both BYOK and platform keys.
+API keys are resolved through key-service at request time. When `orgId` is provided, the service first attempts to decrypt the org's BYOK Anthropic key. If not found, it falls back to the platform app key. No raw API keys are sent in request bodies. Cost tracking applies to both BYOK and platform keys.
 
 ## Auth
 
