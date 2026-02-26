@@ -61,8 +61,8 @@ export const QualifyRequestSchema = z
     sourceOrgId: z.string().min(1),
     sourceRefId: z.string().optional(),
     appId: z.string().optional(),
-    clerkOrgId: z.string().optional(),
-    clerkUserId: z.string().optional(),
+    orgId: z.string().optional(),
+    userId: z.string().optional(),
     brandId: z.string().optional(),
     campaignId: z.string().optional(),
     runId: z.string().optional(),
@@ -120,8 +120,8 @@ export const QualificationsQuerySchema = z.object({
 
 export const StatsQuerySchema = z.object({
   appId: z.string().optional(),
-  clerkOrgId: z.string().optional(),
-  clerkUserId: z.string().optional(),
+  orgId: z.string().optional(),
+  userId: z.string().optional(),
   brandId: z.string().optional(),
   campaignId: z.string().optional(),
   runId: z.string().optional(),

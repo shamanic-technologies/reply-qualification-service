@@ -24,8 +24,8 @@ export async function insertTestRequest(data: {
   subject?: string;
   bodyText?: string;
   appId?: string;
-  clerkOrgId?: string;
-  clerkUserId?: string;
+  orgId?: string;
+  userId?: string;
   brandId?: string;
   campaignId?: string;
   runId?: string;
@@ -40,8 +40,8 @@ export async function insertTestRequest(data: {
       subject: data.subject || "Test Subject",
       bodyText: data.bodyText || "Test body",
       appId: data.appId,
-      clerkOrgId: data.clerkOrgId,
-      clerkUserId: data.clerkUserId,
+      orgId: data.orgId,
+      userId: data.userId,
       brandId: data.brandId,
       campaignId: data.campaignId,
       runId: data.runId,

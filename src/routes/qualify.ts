@@ -34,13 +34,13 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
 
     const body = parsed.data;
 
-    // Create a run in RunsService if we have clerkOrgId
+    // Create a run in RunsService if we have orgId
     let serviceRunId: string | null = null;
-    if (body.clerkOrgId) {
+    if (body.orgId) {
       try {
         const run = await createRun({
-          clerkOrgId: body.clerkOrgId,
-          clerkUserId: body.clerkUserId,
+          orgId: body.orgId,
+          userId: body.userId,
           appId: body.appId || "mcpfactory",
           brandId: body.brandId,
           campaignId: body.campaignId,
@@ -60,8 +60,8 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
         sourceOrgId: body.sourceOrgId,
         sourceRefId: body.sourceRefId,
         appId: body.appId,
-        clerkOrgId: body.clerkOrgId,
-        clerkUserId: body.clerkUserId,
+        orgId: body.orgId,
+        userId: body.userId,
         brandId: body.brandId,
         campaignId: body.campaignId,
         runId: body.runId,
@@ -83,7 +83,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
     let usedByok: boolean;
     try {
       const resolved = await resolveAnthropicKey({
-        clerkOrgId: body.clerkOrgId,
+        orgId: body.orgId,
         appId: body.appId,
         callerContext: {
           callerService: "reply-qualification-service",

@@ -60,8 +60,8 @@ export interface RunsServiceCost {
 // --- API functions ---
 
 export interface CreateRunParams {
-  clerkOrgId: string;
-  clerkUserId?: string;
+  orgId: string;
+  userId?: string;
   appId?: string;
   brandId?: string;
   campaignId?: string;
@@ -72,8 +72,8 @@ export async function createRun(
   params: CreateRunParams
 ): Promise<RunsServiceRun> {
   return runsApiFetch<RunsServiceRun>("POST", "/v1/runs", {
-    clerkOrgId: params.clerkOrgId,
-    ...(params.clerkUserId && { clerkUserId: params.clerkUserId }),
+    orgId: params.orgId,
+    ...(params.userId && { userId: params.userId }),
     appId: params.appId || "mcpfactory",
     ...(params.brandId && { brandId: params.brandId }),
     ...(params.campaignId && { campaignId: params.campaignId }),

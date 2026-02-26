@@ -27,7 +27,7 @@ describe("KeyService client", () => {
 
   // --- decryptOrgKey ---
 
-  it("should call correct URL with clerkOrgId and include caller headers", async () => {
+  it("should call correct URL with orgId and include caller headers", async () => {
     const fakeResponse = { provider: "anthropic", key: "sk-ant-org-123" };
     fetchSpy.mockResolvedValue({
       ok: true,
@@ -42,7 +42,7 @@ describe("KeyService client", () => {
 
     const [url, opts] = fetchSpy.mock.calls[0];
     expect(url).toBe(
-      "https://keys.test.local/internal/keys/anthropic/decrypt?clerkOrgId=org_abc"
+      "https://keys.test.local/internal/keys/anthropic/decrypt?orgId=org_abc"
     );
     expect(opts.method).toBe("GET");
     expect(opts.headers["X-API-Key"]).toBe("test-key");
@@ -109,7 +109,7 @@ describe("KeyService client", () => {
 
   // --- resolveAnthropicKey ---
 
-  it("should return BYOK key when clerkOrgId is provided and key exists", async () => {
+  it("should return BYOK key when orgId is provided and key exists", async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
       status: 200,
@@ -118,7 +118,7 @@ describe("KeyService client", () => {
     });
 
     const result = await resolveAnthropicKey({
-      clerkOrgId: "org_abc",
+      orgId: "org_abc",
       callerContext,
     });
 
@@ -142,7 +142,7 @@ describe("KeyService client", () => {
       });
 
     const result = await resolveAnthropicKey({
-      clerkOrgId: "org_abc",
+      orgId: "org_abc",
       appId: "my-app",
       callerContext,
     });
@@ -161,11 +161,11 @@ describe("KeyService client", () => {
     });
 
     await expect(
-      resolveAnthropicKey({ clerkOrgId: "org_abc", callerContext })
+      resolveAnthropicKey({ orgId: "org_abc", callerContext })
     ).rejects.toThrow("No Anthropic key found");
   });
 
-  it("should skip BYOK and use app key when no clerkOrgId", async () => {
+  it("should skip BYOK and use app key when no orgId", async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
       status: 200,
@@ -195,7 +195,7 @@ describe("KeyService client", () => {
     );
   });
 
-  it("should throw when app key returns 404 and no clerkOrgId", async () => {
+  it("should throw when app key returns 404 and no orgId", async () => {
     fetchSpy.mockResolvedValue({
       ok: false,
       status: 404,

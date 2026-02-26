@@ -16,7 +16,7 @@ describe("GET /stats", () => {
 
     // Org A, campaign X, app1 — 2 qualifications
     const r1 = await insertTestRequest({
-      clerkOrgId: "org_A",
+      orgId: "org_A",
       campaignId: "camp_X",
       appId: "app1",
       brandId: "brand_1",
@@ -27,7 +27,7 @@ describe("GET /stats", () => {
     });
 
     const r2 = await insertTestRequest({
-      clerkOrgId: "org_A",
+      orgId: "org_A",
       campaignId: "camp_X",
       appId: "app1",
       brandId: "brand_1",
@@ -39,7 +39,7 @@ describe("GET /stats", () => {
 
     // Org B, campaign Y, app2 — 1 qualification
     const r3 = await insertTestRequest({
-      clerkOrgId: "org_B",
+      orgId: "org_B",
       campaignId: "camp_Y",
       appId: "app2",
       brandId: "brand_2",
@@ -72,9 +72,9 @@ describe("GET /stats", () => {
     expect(res.body.total).toBeUndefined();
   });
 
-  it("should filter by clerkOrgId", async () => {
+  it("should filter by orgId", async () => {
     const res = await request(app)
-      .get("/stats?clerkOrgId=org_A")
+      .get("/stats?orgId=org_A")
       .set(getAuthHeaders());
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(2);
@@ -109,7 +109,7 @@ describe("GET /stats", () => {
 
   it("should support combined filters", async () => {
     const res = await request(app)
-      .get("/stats?clerkOrgId=org_A&campaignId=camp_X")
+      .get("/stats?orgId=org_A&campaignId=camp_X")
       .set(getAuthHeaders());
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(2);
@@ -117,7 +117,7 @@ describe("GET /stats", () => {
 
   it("should return empty stats when no matches", async () => {
     const res = await request(app)
-      .get("/stats?clerkOrgId=nonexistent")
+      .get("/stats?orgId=nonexistent")
       .set(getAuthHeaders());
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(0);

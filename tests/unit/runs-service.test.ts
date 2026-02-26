@@ -27,8 +27,8 @@ describe("RunsService client", () => {
     });
 
     const result = await createRun({
-      clerkOrgId: "org_abc",
-      clerkUserId: "user_xyz",
+      orgId: "org_abc",
+      userId: "user_xyz",
       appId: "mcpfactory",
       brandId: "brand-1",
       campaignId: "camp-1",
@@ -44,8 +44,8 @@ describe("RunsService client", () => {
     expect(opts.headers["X-API-Key"]).toBe("test-key");
 
     const body = JSON.parse(opts.body);
-    expect(body.clerkOrgId).toBe("org_abc");
-    expect(body.clerkUserId).toBe("user_xyz");
+    expect(body.orgId).toBe("org_abc");
+    expect(body.userId).toBe("user_xyz");
     expect(body.appId).toBe("mcpfactory");
     expect(body.brandId).toBe("brand-1");
     expect(body.campaignId).toBe("camp-1");
@@ -60,7 +60,7 @@ describe("RunsService client", () => {
       json: () => Promise.resolve({ id: "run-456" }),
     });
 
-    await createRun({ clerkOrgId: "org_abc" });
+    await createRun({ orgId: "org_abc" });
 
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
     expect(body.appId).toBe("mcpfactory");
@@ -72,10 +72,10 @@ describe("RunsService client", () => {
       json: () => Promise.resolve({ id: "run-789" }),
     });
 
-    await createRun({ clerkOrgId: "org_abc" });
+    await createRun({ orgId: "org_abc" });
 
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
-    expect(body).not.toHaveProperty("clerkUserId");
+    expect(body).not.toHaveProperty("userId");
     expect(body).not.toHaveProperty("brandId");
     expect(body).not.toHaveProperty("campaignId");
     expect(body).not.toHaveProperty("parentRunId");
@@ -129,7 +129,7 @@ describe("RunsService client", () => {
       text: () => Promise.resolve('{"error":"bad request"}'),
     });
 
-    await expect(createRun({ clerkOrgId: "org_abc" })).rejects.toThrow(
+    await expect(createRun({ orgId: "org_abc" })).rejects.toThrow(
       "RunsService POST /v1/runs failed (400)"
     );
   });
