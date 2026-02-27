@@ -85,6 +85,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       const resolved = await resolveAnthropicKey({
         orgId: body.orgId,
         appId: body.appId,
+        keySource: body.keySource,
         callerContext: {
           callerService: "reply-qualification-service",
           callerMethod: "POST",

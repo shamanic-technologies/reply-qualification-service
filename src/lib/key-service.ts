@@ -73,14 +73,63 @@ export async function decryptAppKey(
   );
 }
 
+export async function decryptPlatformKey(
+  provider: string,
+  callerContext: CallerContext
+): Promise<DecryptKeyResponse | null> {
+  return keyServiceFetch<DecryptKeyResponse>(
+    `/internal/platform-keys/${encodeURIComponent(provider)}/decrypt`,
+    callerContext
+  );
+}
+
 export async function resolveAnthropicKey(params: {
   orgId?: string;
   appId?: string;
+  keySource?: "platform" | "app" | "byok";
   callerContext: CallerContext;
 }): Promise<{ apiKey: string; usedByok: boolean }> {
-  const { orgId, appId, callerContext } = params;
+  const { orgId, appId, keySource, callerContext } = params;
 
-  // Try BYOK first if orgId is provided
+  // If keySource is explicitly set, use the specified resolution path
+  if (keySource === "platform") {
+    const platformResult = await decryptPlatformKey("anthropic", callerContext);
+    if (platformResult) {
+      return { apiKey: platformResult.key, usedByok: false };
+    }
+    throw new Error(
+      `No Anthropic platform key found in key-service`
+    );
+  }
+
+  if (keySource === "byok") {
+    if (!orgId) {
+      throw new Error(`keySource "byok" requires orgId`);
+    }
+    const byokResult = await decryptOrgKey("anthropic", orgId, callerContext);
+    if (byokResult) {
+      return { apiKey: byokResult.key, usedByok: true };
+    }
+    throw new Error(
+      `No BYOK Anthropic key found for org "${orgId}" in key-service`
+    );
+  }
+
+  if (keySource === "app") {
+    const appResult = await decryptAppKey(
+      "anthropic",
+      appId || "reply-qualification-service",
+      callerContext
+    );
+    if (appResult) {
+      return { apiKey: appResult.key, usedByok: false };
+    }
+    throw new Error(
+      `No Anthropic app key found for "${appId || "reply-qualification-service"}" in key-service`
+    );
+  }
+
+  // No keySource specified — legacy behavior: try BYOK first, then app key
   if (orgId) {
     const byokResult = await decryptOrgKey("anthropic", orgId, callerContext);
     if (byokResult) {
@@ -88,7 +137,6 @@ export async function resolveAnthropicKey(params: {
     }
   }
 
-  // Fall back to app key
   const appResult = await decryptAppKey(
     "anthropic",
     appId || "reply-qualification-service",

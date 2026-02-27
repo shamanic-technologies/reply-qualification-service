@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.stubEnv("KEY_SERVICE_URL", "https://keys.test.local");
 vi.stubEnv("KEY_SERVICE_API_KEY", "test-key");
 
-const { decryptOrgKey, decryptAppKey, resolveAnthropicKey } = await import(
+const { decryptOrgKey, decryptAppKey, decryptPlatformKey, resolveAnthropicKey } = await import(
   "../../src/lib/key-service.js"
 );
 
@@ -205,5 +205,135 @@ describe("KeyService client", () => {
     await expect(resolveAnthropicKey({ callerContext })).rejects.toThrow(
       "No Anthropic key found"
     );
+  });
+
+  // --- decryptPlatformKey ---
+
+  it("should call correct URL for platform key", async () => {
+    const fakeResponse = { provider: "anthropic", key: "sk-ant-platform-123" };
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(fakeResponse),
+    });
+
+    const result = await decryptPlatformKey("anthropic", callerContext);
+
+    expect(result).toEqual(fakeResponse);
+    const [url] = fetchSpy.mock.calls[0];
+    expect(url).toBe(
+      "https://keys.test.local/internal/platform-keys/anthropic/decrypt"
+    );
+  });
+
+  it("should return null on 404 for platform key", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: () => Promise.resolve("Not found"),
+    });
+
+    const result = await decryptPlatformKey("anthropic", callerContext);
+    expect(result).toBeNull();
+  });
+
+  // --- resolveAnthropicKey with keySource ---
+
+  it("should use platform key endpoint when keySource is 'platform'", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({ provider: "anthropic", key: "sk-ant-platform" }),
+    });
+
+    const result = await resolveAnthropicKey({
+      keySource: "platform",
+      callerContext,
+    });
+
+    expect(result).toEqual({ apiKey: "sk-ant-platform", usedByok: false });
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect(fetchSpy.mock.calls[0][0]).toContain("/internal/platform-keys/anthropic/decrypt");
+  });
+
+  it("should throw when keySource is 'platform' and no platform key exists", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: () => Promise.resolve("Not found"),
+    });
+
+    await expect(
+      resolveAnthropicKey({ keySource: "platform", callerContext })
+    ).rejects.toThrow("No Anthropic platform key found");
+  });
+
+  it("should use BYOK endpoint when keySource is 'byok'", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({ provider: "anthropic", key: "sk-ant-byok" }),
+    });
+
+    const result = await resolveAnthropicKey({
+      orgId: "org_abc",
+      keySource: "byok",
+      callerContext,
+    });
+
+    expect(result).toEqual({ apiKey: "sk-ant-byok", usedByok: true });
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect(fetchSpy.mock.calls[0][0]).toContain("/internal/keys/anthropic/decrypt");
+  });
+
+  it("should throw when keySource is 'byok' but no orgId", async () => {
+    await expect(
+      resolveAnthropicKey({ keySource: "byok", callerContext })
+    ).rejects.toThrow('keySource "byok" requires orgId');
+  });
+
+  it("should throw when keySource is 'byok' and no BYOK key exists", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: () => Promise.resolve("Not found"),
+    });
+
+    await expect(
+      resolveAnthropicKey({ orgId: "org_abc", keySource: "byok", callerContext })
+    ).rejects.toThrow("No BYOK Anthropic key found");
+  });
+
+  it("should use app key endpoint when keySource is 'app'", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({ provider: "anthropic", key: "sk-ant-app" }),
+    });
+
+    const result = await resolveAnthropicKey({
+      appId: "my-app",
+      keySource: "app",
+      callerContext,
+    });
+
+    expect(result).toEqual({ apiKey: "sk-ant-app", usedByok: false });
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect(fetchSpy.mock.calls[0][0]).toContain("/internal/app-keys/anthropic/decrypt?appId=my-app");
+  });
+
+  it("should throw when keySource is 'app' and no app key exists", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: () => Promise.resolve("Not found"),
+    });
+
+    await expect(
+      resolveAnthropicKey({ appId: "my-app", keySource: "app", callerContext })
+    ).rejects.toThrow("No Anthropic app key found");
   });
 });

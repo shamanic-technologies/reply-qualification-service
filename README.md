@@ -28,6 +28,7 @@ Classify an email reply. Stores the request, runs AI classification, returns the
 | `appId` | No | Calling application identifier |
 | `orgId` | No | Organization identifier |
 | `userId` | No | User identifier |
+| `keySource` | No | Key resolution strategy: `"platform"`, `"app"`, or `"byok"` |
 | `brandId` | No | Brand identifier |
 | `campaignId` | No | Campaign identifier |
 | `runId` | No | Parent run identifier (becomes `parentRunId` in RunsService) |
@@ -149,9 +150,17 @@ npm run db:migrate    # Run migrations
 npm run db:studio     # Open Drizzle Studio
 ```
 
-## BYOK (Bring Your Own Key)
+## Key Resolution
 
-API keys are resolved through key-service at request time. When `orgId` is provided, the service first attempts to decrypt the org's BYOK Anthropic key. If not found, it falls back to the platform app key. No raw API keys are sent in request bodies. Cost tracking applies to both BYOK and platform keys.
+API keys are resolved through key-service at request time via the `keySource` field:
+
+| keySource | Description |
+|---|---|
+| `"platform"` | Platform-owned key (no `appId` needed) |
+| `"app"` | Per-app key (uses `appId`, defaults to `reply-qualification-service`) |
+| `"byok"` | User's own key (requires `orgId`) |
+
+When `keySource` is omitted, legacy behavior applies: tries BYOK first (if `orgId` provided), then falls back to the app key. No raw API keys are sent in request bodies. Cost tracking applies to all key sources.
 
 ## Auth
 
