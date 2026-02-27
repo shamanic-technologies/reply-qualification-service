@@ -19,6 +19,10 @@ registry.registerComponent("securitySchemes", "apiKey", {
 
 // --- Shared enums ---
 
+export const KeySourceSchema = z
+  .enum(["platform", "app", "byok"])
+  .openapi("KeySource");
+
 export const ClassificationSchema = z
   .enum([
     "willing_to_meet",
@@ -63,6 +67,7 @@ export const QualifyRequestSchema = z
     appId: z.string().optional(),
     orgId: z.string().optional(),
     userId: z.string().optional(),
+    keySource: KeySourceSchema.optional(),
     brandId: z.string().optional(),
     campaignId: z.string().optional(),
     runId: z.string().optional(),
