@@ -9,7 +9,7 @@ export interface QualificationResult {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
-  usedByok: boolean;
+  keySource: "platform" | "org";
   responseRaw: unknown;
 }
 
@@ -51,11 +51,11 @@ export interface QualifyOptions {
   bodyText: string | null;
   bodyHtml: string | null;
   anthropicApiKey: string;
-  usedByok: boolean;
+  keySource: "platform" | "org";
 }
 
 export async function qualifyReply(options: QualifyOptions): Promise<QualificationResult> {
-  const { subject, bodyText, bodyHtml, anthropicApiKey, usedByok } = options;
+  const { subject, bodyText, bodyHtml, anthropicApiKey, keySource } = options;
   const client = new Anthropic({ apiKey: anthropicApiKey });
   
   // Use text body if available, otherwise strip HTML
@@ -105,7 +105,7 @@ ${content}`;
     inputTokens,
     outputTokens,
     costUsd,
-    usedByok,
+    keySource,
     responseRaw: response,
   };
 }

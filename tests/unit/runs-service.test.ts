@@ -29,7 +29,6 @@ describe("RunsService client", () => {
     const result = await createRun({
       orgId: "org_abc",
       userId: "user_xyz",
-      appId: "mcpfactory",
       brandId: "brand-1",
       campaignId: "camp-1",
       parentRunId: "parent-run-1",
@@ -46,7 +45,7 @@ describe("RunsService client", () => {
     const body = JSON.parse(opts.body);
     expect(body.orgId).toBe("org_abc");
     expect(body.userId).toBe("user_xyz");
-    expect(body.appId).toBe("mcpfactory");
+    expect(body.appId).toBe("reply-qualification-service");
     expect(body.brandId).toBe("brand-1");
     expect(body.campaignId).toBe("camp-1");
     expect(body.parentRunId).toBe("parent-run-1");
@@ -54,16 +53,16 @@ describe("RunsService client", () => {
     expect(body.taskName).toBe("qualify-reply");
   });
 
-  it("should default appId to mcpfactory when not provided", async () => {
+  it("should always hardcode appId to reply-qualification-service", async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ id: "run-456" }),
     });
 
-    await createRun({ orgId: "org_abc" });
+    await createRun({ orgId: "org_abc", userId: "user_xyz" });
 
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
-    expect(body.appId).toBe("mcpfactory");
+    expect(body.appId).toBe("reply-qualification-service");
   });
 
   it("should omit optional fields when not provided", async () => {
@@ -72,25 +71,24 @@ describe("RunsService client", () => {
       json: () => Promise.resolve({ id: "run-789" }),
     });
 
-    await createRun({ orgId: "org_abc" });
+    await createRun({ orgId: "org_abc", userId: "user_xyz" });
 
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
-    expect(body).not.toHaveProperty("userId");
     expect(body).not.toHaveProperty("brandId");
     expect(body).not.toHaveProperty("campaignId");
     expect(body).not.toHaveProperty("parentRunId");
   });
 
-  it("should add costs to a run", async () => {
-    const fakeCosts = { costs: [{ id: "cost-1", costName: "test" }] };
+  it("should add costs with costSource to a run", async () => {
+    const fakeCosts = { costs: [{ id: "cost-1", costName: "test", costSource: "platform" }] };
     fetchSpy.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(fakeCosts),
     });
 
     const result = await addCosts("run-123", [
-      { costName: "anthropic-haiku-4.5-tokens-input", quantity: 150 },
-      { costName: "anthropic-haiku-4.5-tokens-output", quantity: 50 },
+      { costName: "anthropic-haiku-4.5-tokens-input", costSource: "platform", quantity: 150 },
+      { costName: "anthropic-haiku-4.5-tokens-output", costSource: "platform", quantity: 50 },
     ]);
 
     expect(result).toEqual(fakeCosts);
@@ -101,7 +99,23 @@ describe("RunsService client", () => {
     const body = JSON.parse(opts.body);
     expect(body.items).toHaveLength(2);
     expect(body.items[0].costName).toBe("anthropic-haiku-4.5-tokens-input");
+    expect(body.items[0].costSource).toBe("platform");
     expect(body.items[0].quantity).toBe(150);
+    expect(body.items[1].costSource).toBe("platform");
+  });
+
+  it("should pass org costSource when using org key", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ costs: [] }),
+    });
+
+    await addCosts("run-123", [
+      { costName: "anthropic-haiku-4.5-tokens-input", costSource: "org", quantity: 100 },
+    ]);
+
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(body.items[0].costSource).toBe("org");
   });
 
   it("should update run status", async () => {
@@ -129,7 +143,7 @@ describe("RunsService client", () => {
       text: () => Promise.resolve('{"error":"bad request"}'),
     });
 
-    await expect(createRun({ orgId: "org_abc" })).rejects.toThrow(
+    await expect(createRun({ orgId: "org_abc", userId: "user_xyz" })).rejects.toThrow(
       "RunsService POST /v1/runs failed (400)"
     );
   });

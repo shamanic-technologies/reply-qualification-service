@@ -1,25 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { KeySourceSchema, QualifyRequestSchema } from "../../src/schemas.js";
+import { CostSourceSchema, QualifyRequestSchema, StatsQuerySchema } from "../../src/schemas.js";
 
-describe("KeySourceSchema", () => {
+describe("CostSourceSchema", () => {
   it("should accept 'platform'", () => {
-    expect(KeySourceSchema.parse("platform")).toBe("platform");
+    expect(CostSourceSchema.parse("platform")).toBe("platform");
   });
 
-  it("should accept 'app'", () => {
-    expect(KeySourceSchema.parse("app")).toBe("app");
-  });
-
-  it("should accept 'byok'", () => {
-    expect(KeySourceSchema.parse("byok")).toBe("byok");
+  it("should accept 'org'", () => {
+    expect(CostSourceSchema.parse("org")).toBe("org");
   });
 
   it("should reject invalid values", () => {
-    expect(() => KeySourceSchema.parse("invalid")).toThrow();
+    expect(() => CostSourceSchema.parse("app")).toThrow();
+    expect(() => CostSourceSchema.parse("byok")).toThrow();
+    expect(() => CostSourceSchema.parse("invalid")).toThrow();
   });
 });
 
-describe("QualifyRequestSchema keySource field", () => {
+describe("QualifyRequestSchema", () => {
   const validBase = {
     sourceService: "test-service",
     sourceOrgId: "org_123",
@@ -27,52 +25,82 @@ describe("QualifyRequestSchema keySource field", () => {
     toEmail: "to@example.com",
   };
 
-  it("should accept request with keySource 'platform'", () => {
+  it("should accept a minimal valid request", () => {
+    const result = QualifyRequestSchema.safeParse(validBase);
+    expect(result.success).toBe(true);
+  });
+
+  it("should accept request with parentRunId", () => {
+    const result = QualifyRequestSchema.safeParse({
+      ...validBase,
+      parentRunId: "550e8400-e29b-41d4-a716-446655440000",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.parentRunId).toBe("550e8400-e29b-41d4-a716-446655440000");
+    }
+  });
+
+  it("regression: should reject non-UUID parentRunId", () => {
+    const result = QualifyRequestSchema.safeParse({
+      ...validBase,
+      parentRunId: "not-a-uuid",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("regression: should not accept appId (removed)", () => {
+    const result = QualifyRequestSchema.safeParse({
+      ...validBase,
+      appId: "some-app",
+    });
+    // appId is stripped by Zod (not in schema), request still valid
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as any).appId).toBeUndefined();
+    }
+  });
+
+  it("regression: should not accept keySource (removed)", () => {
     const result = QualifyRequestSchema.safeParse({
       ...validBase,
       keySource: "platform",
     });
+    // keySource is stripped by Zod, request still valid
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.keySource).toBe("platform");
+      expect((result.data as any).keySource).toBeUndefined();
     }
   });
 
-  it("should accept request with keySource 'app'", () => {
+  it("regression: should not accept orgId/userId in body (moved to headers)", () => {
     const result = QualifyRequestSchema.safeParse({
       ...validBase,
-      keySource: "app",
+      orgId: "org-id",
+      userId: "user-id",
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.keySource).toBe("app");
+      expect((result.data as any).orgId).toBeUndefined();
+      expect((result.data as any).userId).toBeUndefined();
     }
   });
+});
 
-  it("should accept request with keySource 'byok'", () => {
-    const result = QualifyRequestSchema.safeParse({
-      ...validBase,
-      keySource: "byok",
-    });
+describe("StatsQuerySchema", () => {
+  it("regression: should not accept appId (removed)", () => {
+    const result = StatsQuerySchema.safeParse({ appId: "some-app" });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.keySource).toBe("byok");
+      expect((result.data as any).appId).toBeUndefined();
     }
   });
 
-  it("should accept request without keySource (optional)", () => {
-    const result = QualifyRequestSchema.safeParse(validBase);
+  it("should accept orgId filter", () => {
+    const result = StatsQuerySchema.safeParse({ orgId: "org-1" });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.keySource).toBeUndefined();
+      expect(result.data.orgId).toBe("org-1");
     }
-  });
-
-  it("regression: should reject keySource values not in enum", () => {
-    const result = QualifyRequestSchema.safeParse({
-      ...validBase,
-      keySource: "invalid",
-    });
-    expect(result.success).toBe(false);
   });
 });

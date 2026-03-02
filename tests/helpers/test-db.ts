@@ -23,7 +23,6 @@ export async function insertTestRequest(data: {
   toEmail?: string;
   subject?: string;
   bodyText?: string;
-  appId?: string;
   orgId?: string;
   userId?: string;
   brandId?: string;
@@ -39,7 +38,6 @@ export async function insertTestRequest(data: {
       toEmail: data.toEmail || "recipient@example.com",
       subject: data.subject || "Test Subject",
       bodyText: data.bodyText || "Test body",
-      appId: data.appId,
       orgId: data.orgId,
       userId: data.userId,
       brandId: data.brandId,

@@ -51,9 +51,11 @@ export interface RunsServiceCost {
   id: string;
   runId: string;
   costName: string;
+  costSource: "platform" | "org";
   quantity: string;
   unitCostInUsdCents: string;
   totalCostInUsdCents: string;
+  status: string;
   createdAt: string;
 }
 
@@ -61,8 +63,7 @@ export interface RunsServiceCost {
 
 export interface CreateRunParams {
   orgId: string;
-  userId?: string;
-  appId?: string;
+  userId: string;
   brandId?: string;
   campaignId?: string;
   parentRunId?: string;
@@ -73,8 +74,8 @@ export async function createRun(
 ): Promise<RunsServiceRun> {
   return runsApiFetch<RunsServiceRun>("POST", "/v1/runs", {
     orgId: params.orgId,
-    ...(params.userId && { userId: params.userId }),
-    appId: params.appId || "mcpfactory",
+    userId: params.userId,
+    appId: "reply-qualification-service",
     ...(params.brandId && { brandId: params.brandId }),
     ...(params.campaignId && { campaignId: params.campaignId }),
     serviceName: "reply-qualification-service",
@@ -85,7 +86,7 @@ export async function createRun(
 
 export async function addCosts(
   runId: string,
-  items: { costName: string; quantity: number }[]
+  items: { costName: string; costSource: "platform" | "org"; quantity: number }[]
 ): Promise<{ costs: RunsServiceCost[] }> {
   return runsApiFetch<{ costs: RunsServiceCost[] }>(
     "POST",

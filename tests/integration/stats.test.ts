@@ -14,11 +14,10 @@ describe("GET /stats", () => {
   beforeAll(async () => {
     await cleanTestData();
 
-    // Org A, campaign X, app1 — 2 qualifications
+    // Org A, campaign X — 2 qualifications
     const r1 = await insertTestRequest({
       orgId: "org_A",
       campaignId: "camp_X",
-      appId: "app1",
       brandId: "brand_1",
     });
     await insertTestQualification(r1.id, {
@@ -29,7 +28,6 @@ describe("GET /stats", () => {
     const r2 = await insertTestRequest({
       orgId: "org_A",
       campaignId: "camp_X",
-      appId: "app1",
       brandId: "brand_1",
     });
     await insertTestQualification(r2.id, {
@@ -37,11 +35,10 @@ describe("GET /stats", () => {
       confidence: "0.80",
     });
 
-    // Org B, campaign Y, app2 — 1 qualification
+    // Org B, campaign Y — 1 qualification
     const r3 = await insertTestRequest({
       orgId: "org_B",
       campaignId: "camp_Y",
-      appId: "app2",
       brandId: "brand_2",
     });
     await insertTestQualification(r3.id, {
@@ -62,11 +59,6 @@ describe("GET /stats", () => {
   });
 
   it("regression: should not return global data without filters (test data leak)", async () => {
-    // Previously, calling /stats without filters returned ALL rows including test data,
-    // which caused the dashboard to show fake reply classifications (42 willing_to_meet,
-    // 42 not_interested) when there were actually 0 replies.
-    // Root cause: CI integration tests wrote to production DB due to misconfigured
-    // REPLY_QUALIFICATION_SERVICE_DATABASE_URL_DEV secret pointing to prod instead of dev.
     const res = await request(app).get("/stats").set(getAuthHeaders());
     expect(res.status).toBe(400);
     expect(res.body.total).toBeUndefined();
@@ -91,12 +83,13 @@ describe("GET /stats", () => {
     expect(res.body.byClassification.interested).toBe(1);
   });
 
-  it("should filter by appId", async () => {
+  it("regression: appId filter no longer accepted (removed)", async () => {
+    // appId was removed from StatsQuerySchema — should be ignored/stripped
     const res = await request(app)
       .get("/stats?appId=app2")
       .set(getAuthHeaders());
-    expect(res.status).toBe(200);
-    expect(res.body.total).toBe(1);
+    // appId is stripped by Zod, leaving no valid filter → 400
+    expect(res.status).toBe(400);
   });
 
   it("should filter by brandId", async () => {
@@ -130,5 +123,13 @@ describe("GET /stats", () => {
   it("should require auth", async () => {
     const res = await request(app).get("/stats");
     expect(res.status).toBe(401);
+  });
+
+  it("should require x-org-id and x-user-id headers", async () => {
+    const res = await request(app)
+      .get("/stats?orgId=org_A")
+      .set({ "X-API-Key": process.env.REPLY_QUALIFICATION_SERVICE_API_KEY || "test-api-key" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/x-org-id/i);
   });
 });
