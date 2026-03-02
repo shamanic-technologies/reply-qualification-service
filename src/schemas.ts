@@ -19,9 +19,9 @@ registry.registerComponent("securitySchemes", "apiKey", {
 
 // --- Shared enums ---
 
-export const KeySourceSchema = z
-  .enum(["platform", "app", "byok"])
-  .openapi("KeySource");
+export const CostSourceSchema = z
+  .enum(["platform", "org"])
+  .openapi("CostSource");
 
 export const ClassificationSchema = z
   .enum([
@@ -64,13 +64,9 @@ export const QualifyRequestSchema = z
     sourceService: z.string().min(1),
     sourceOrgId: z.string().min(1),
     sourceRefId: z.string().optional(),
-    appId: z.string().optional(),
-    orgId: z.string().optional(),
-    userId: z.string().optional(),
-    keySource: KeySourceSchema.optional(),
     brandId: z.string().optional(),
     campaignId: z.string().optional(),
-    runId: z.string().optional(),
+    parentRunId: z.string().uuid().optional(),
     fromEmail: z.string().email(),
     toEmail: z.string().email(),
     subject: z.string().optional(),
@@ -92,7 +88,7 @@ export const QualifyResponseSchema = z
     suggestedAction: z.string().nullable(),
     extractedDetails: z.record(z.string(), z.unknown()).nullable(),
     costUsd: z.number(),
-    usedByok: z.boolean().optional(),
+    keySource: CostSourceSchema.optional(),
     serviceRunId: z.string().uuid().nullable().optional(),
     createdAt: z.string().or(z.date()),
   })
@@ -124,7 +120,6 @@ export const QualificationsQuerySchema = z.object({
 // --- Stats schemas ---
 
 export const StatsQuerySchema = z.object({
-  appId: z.string().optional(),
   orgId: z.string().optional(),
   userId: z.string().optional(),
   brandId: z.string().optional(),

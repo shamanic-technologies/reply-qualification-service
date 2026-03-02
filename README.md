@@ -4,7 +4,13 @@ AI-powered email reply classification service. Analyzes incoming email replies t
 
 ## API Endpoints
 
-All authenticated endpoints require the `X-API-Key` header.
+All authenticated endpoints require these headers:
+
+| Header | Required | Description |
+|---|---|---|
+| `X-API-Key` | Yes | Service-to-service API key |
+| `x-org-id` | Yes | Internal org UUID from client-service |
+| `x-user-id` | Yes | Internal user UUID from client-service |
 
 ### `POST /qualify`
 
@@ -25,13 +31,9 @@ Classify an email reply. Stores the request, runs AI classification, returns the
 | `inReplyToMessageId` | No | Original message ID for threading |
 | `emailReceivedAt` | No | ISO 8601 timestamp |
 | `webhookUrl` | No | Callback URL for async notification |
-| `appId` | No | Calling application identifier |
-| `orgId` | No | Organization identifier |
-| `userId` | No | User identifier |
-| `keySource` | No | Key resolution strategy: `"platform"`, `"app"`, or `"byok"` |
 | `brandId` | No | Brand identifier |
 | `campaignId` | No | Campaign identifier |
-| `runId` | No | Parent run identifier (becomes `parentRunId` in RunsService) |
+| `parentRunId` | No | Parent run UUID (linked in RunsService) |
 
 **Response:**
 
@@ -45,7 +47,7 @@ Classify an email reply. Stores the request, runs AI classification, returns the
   "suggestedAction": "forward_to_client",
   "extractedDetails": { "meeting_preference": "Tuesday afternoon" },
   "costUsd": 0.000123,
-  "usedByok": false,
+  "keySource": "platform",
   "serviceRunId": "uuid-or-null",
   "createdAt": "2025-01-01T00:00:00.000Z"
 }
@@ -67,7 +69,6 @@ Aggregated qualification statistics. **At least one filter parameter is required
 
 | Param | Description |
 |---|---|
-| `appId` | Filter by application identifier |
 | `orgId` | Filter by organization identifier |
 | `userId` | Filter by user identifier |
 | `brandId` | Filter by brand identifier |
@@ -152,19 +153,24 @@ npm run db:studio     # Open Drizzle Studio
 
 ## Key Resolution
 
-API keys are resolved through key-service at request time via the `keySource` field:
+API keys are resolved automatically through key-service at runtime:
 
-| keySource | Description |
-|---|---|
-| `"platform"` | Platform-owned key (no `appId` needed) |
-| `"app"` | Per-app key (uses `appId`, defaults to `reply-qualification-service`) |
-| `"byok"` | User's own key (requires `orgId`) |
+```
+GET /keys/anthropic/decrypt?orgId=<orgId>&userId=<userId>
+```
 
-When `keySource` is omitted, legacy behavior applies: tries BYOK first (if `orgId` provided), then falls back to the app key. No raw API keys are sent in request bodies. Cost tracking applies to all key sources.
+key-service auto-resolves whether to use the org's own key or the platform key based on the org's preference. The response includes a `keySource` field (`"platform"` or `"org"`) indicating which key was used. This `keySource` value is passed as `costSource` when declaring costs to runs-service.
+
+No raw API keys are sent in request bodies. No `appId` or `keySource` fields are needed in requests.
 
 ## Auth
 
-Service-to-service authentication via `X-API-Key` header. Optionally pass `X-Source-Service` to identify the calling service.
+Service-to-service authentication requires three headers:
+- `X-API-Key` — service API key
+- `x-org-id` — internal org UUID (from client-service)
+- `x-user-id` — internal user UUID (from client-service)
+
+Optionally pass `X-Source-Service` to identify the calling service.
 
 ## AI Model
 
@@ -207,7 +213,7 @@ docker run -p 3000:3000 --env-file .env reply-qualification-service
 - **Framework:** Express 4
 - **ORM:** Drizzle ORM + PostgreSQL (Neon)
 - **AI:** Anthropic Claude 3 Haiku (keys resolved via key-service)
-- **Key Management:** key-service (BYOK + platform key resolution)
+- **Key Management:** key-service (auto-resolves org vs platform keys)
 - **Testing:** Vitest + Supertest
 - **Validation:** Zod + `@asteasolutions/zod-to-openapi`
 - **CI:** GitHub Actions (unit + integration tests on push/PR to main)

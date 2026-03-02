@@ -13,6 +13,7 @@ export interface CallerContext {
 export interface DecryptKeyResponse {
   provider: string;
   key: string;
+  keySource: "platform" | "org";
 }
 
 // --- Internal fetch wrapper ---
@@ -20,7 +21,7 @@ export interface DecryptKeyResponse {
 async function keyServiceFetch<T>(
   path: string,
   callerContext: CallerContext
-): Promise<T | null> {
+): Promise<T> {
   if (!KEY_SERVICE_API_KEY) {
     throw new Error("KEY_SERVICE_API_KEY is not set");
   }
@@ -35,10 +36,6 @@ async function keyServiceFetch<T>(
     },
   });
 
-  if (res.status === 404) {
-    return null;
-  }
-
   if (!res.ok) {
     const text = await res.text();
     throw new Error(
@@ -51,102 +48,22 @@ async function keyServiceFetch<T>(
 
 // --- Public API ---
 
-export async function decryptOrgKey(
-  provider: string,
-  orgId: string,
-  callerContext: CallerContext
-): Promise<DecryptKeyResponse | null> {
-  return keyServiceFetch<DecryptKeyResponse>(
-    `/internal/keys/${encodeURIComponent(provider)}/decrypt?orgId=${encodeURIComponent(orgId)}`,
-    callerContext
-  );
-}
-
-export async function decryptAppKey(
-  provider: string,
-  appId: string,
-  callerContext: CallerContext
-): Promise<DecryptKeyResponse | null> {
-  return keyServiceFetch<DecryptKeyResponse>(
-    `/internal/app-keys/${encodeURIComponent(provider)}/decrypt?appId=${encodeURIComponent(appId)}`,
-    callerContext
-  );
-}
-
-export async function decryptPlatformKey(
-  provider: string,
-  callerContext: CallerContext
-): Promise<DecryptKeyResponse | null> {
-  return keyServiceFetch<DecryptKeyResponse>(
-    `/internal/platform-keys/${encodeURIComponent(provider)}/decrypt`,
-    callerContext
-  );
-}
-
+/**
+ * Resolve an API key for a provider via key-service.
+ * Uses GET /keys/:provider/decrypt?orgId=<orgId>&userId=<userId>
+ * key-service auto-resolves whether to use org or platform key.
+ */
 export async function resolveAnthropicKey(params: {
-  orgId?: string;
-  appId?: string;
-  keySource?: "platform" | "app" | "byok";
+  orgId: string;
+  userId: string;
   callerContext: CallerContext;
-}): Promise<{ apiKey: string; usedByok: boolean }> {
-  const { orgId, appId, keySource, callerContext } = params;
+}): Promise<{ apiKey: string; keySource: "platform" | "org" }> {
+  const { orgId, userId, callerContext } = params;
 
-  // If keySource is explicitly set, use the specified resolution path
-  if (keySource === "platform") {
-    const platformResult = await decryptPlatformKey("anthropic", callerContext);
-    if (platformResult) {
-      return { apiKey: platformResult.key, usedByok: false };
-    }
-    throw new Error(
-      `No Anthropic platform key found in key-service`
-    );
-  }
-
-  if (keySource === "byok") {
-    if (!orgId) {
-      throw new Error(`keySource "byok" requires orgId`);
-    }
-    const byokResult = await decryptOrgKey("anthropic", orgId, callerContext);
-    if (byokResult) {
-      return { apiKey: byokResult.key, usedByok: true };
-    }
-    throw new Error(
-      `No BYOK Anthropic key found for org "${orgId}" in key-service`
-    );
-  }
-
-  if (keySource === "app") {
-    const appResult = await decryptAppKey(
-      "anthropic",
-      appId || "reply-qualification-service",
-      callerContext
-    );
-    if (appResult) {
-      return { apiKey: appResult.key, usedByok: false };
-    }
-    throw new Error(
-      `No Anthropic app key found for "${appId || "reply-qualification-service"}" in key-service`
-    );
-  }
-
-  // No keySource specified — legacy behavior: try BYOK first, then app key
-  if (orgId) {
-    const byokResult = await decryptOrgKey("anthropic", orgId, callerContext);
-    if (byokResult) {
-      return { apiKey: byokResult.key, usedByok: true };
-    }
-  }
-
-  const appResult = await decryptAppKey(
-    "anthropic",
-    appId || "reply-qualification-service",
+  const result = await keyServiceFetch<DecryptKeyResponse>(
+    `/keys/anthropic/decrypt?orgId=${encodeURIComponent(orgId)}&userId=${encodeURIComponent(userId)}`,
     callerContext
   );
-  if (appResult) {
-    return { apiKey: appResult.key, usedByok: false };
-  }
 
-  throw new Error(
-    `No Anthropic key found: neither BYOK for org "${orgId || "none"}" nor app key for "${appId || "reply-qualification-service"}" is configured in key-service`
-  );
+  return { apiKey: result.key, keySource: result.keySource };
 }

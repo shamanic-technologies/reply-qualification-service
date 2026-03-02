@@ -23,8 +23,7 @@ export const qualificationRequests = pgTable(
     sourceOrgId: text("source_org_id").notNull(),    // Source organization identifier
     sourceRefId: text("source_ref_id"),              // Campaign run ID, pitch ID, etc.
 
-    // Context fields for filtering/aggregation
-    appId: text("app_id"),
+    // Identity (from x-org-id / x-user-id headers)
     orgId: text("org_id"),
     userId: text("user_id"),
     brandId: text("brand_id"),
@@ -49,7 +48,6 @@ export const qualificationRequests = pgTable(
   (table) => [
     index("idx_qr_org").on(table.orgId),
     index("idx_qr_campaign").on(table.campaignId),
-    index("idx_qr_app").on(table.appId),
   ]
 );
 

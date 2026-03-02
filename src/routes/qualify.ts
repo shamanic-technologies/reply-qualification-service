@@ -16,11 +16,7 @@ const router = Router();
 /**
  * POST /qualify - Qualify an email reply using AI
  *
- * This endpoint:
- * 1. Stores the qualification request
- * 2. Runs AI classification
- * 3. Stores the result
- * 4. Returns the qualification synchronously
+ * Identity (orgId, userId) comes from x-org-id / x-user-id headers.
  */
 router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
   try {
@@ -33,23 +29,22 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
     }
 
     const body = parsed.data;
+    const orgId = req.orgId!;
+    const userId = req.userId!;
 
-    // Create a run in RunsService if we have orgId
+    // Create a run in RunsService
     let serviceRunId: string | null = null;
-    if (body.orgId) {
-      try {
-        const run = await createRun({
-          orgId: body.orgId,
-          userId: body.userId,
-          appId: body.appId || "mcpfactory",
-          brandId: body.brandId,
-          campaignId: body.campaignId,
-          parentRunId: body.runId,
-        });
-        serviceRunId = run.id;
-      } catch (err) {
-        console.error("RunsService createRun failed:", err);
-      }
+    try {
+      const run = await createRun({
+        orgId,
+        userId,
+        brandId: body.brandId,
+        campaignId: body.campaignId,
+        parentRunId: body.parentRunId,
+      });
+      serviceRunId = run.id;
+    } catch (err) {
+      console.error("RunsService createRun failed:", err);
     }
 
     // Store the request
@@ -59,12 +54,11 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
         sourceService: body.sourceService,
         sourceOrgId: body.sourceOrgId,
         sourceRefId: body.sourceRefId,
-        appId: body.appId,
-        orgId: body.orgId,
-        userId: body.userId,
+        orgId,
+        userId,
         brandId: body.brandId,
         campaignId: body.campaignId,
-        runId: body.runId,
+        runId: body.parentRunId,
         serviceRunId,
         fromEmail: body.fromEmail,
         toEmail: body.toEmail,
@@ -78,14 +72,13 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       })
       .returning();
 
-    // Resolve Anthropic API key from key-service (BYOK first, then app key fallback)
+    // Resolve Anthropic API key from key-service
     let anthropicApiKey: string;
-    let usedByok: boolean;
+    let keySource: "platform" | "org";
     try {
       const resolved = await resolveAnthropicKey({
-        orgId: body.orgId,
-        appId: body.appId,
-        keySource: body.keySource,
+        orgId,
+        userId,
         callerContext: {
           callerService: "reply-qualification-service",
           callerMethod: "POST",
@@ -93,7 +86,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
         },
       });
       anthropicApiKey = resolved.apiKey;
-      usedByok = resolved.usedByok;
+      keySource = resolved.keySource;
     } catch (err) {
       console.error("Key resolution failed:", err);
       if (serviceRunId) {
@@ -112,7 +105,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
         bodyText: body.bodyText || null,
         bodyHtml: body.bodyHtml || null,
         anthropicApiKey,
-        usedByok,
+        keySource,
       });
     } catch (error) {
       // Mark run as failed in RunsService
@@ -124,16 +117,18 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       throw error;
     }
 
-    // Log costs to RunsService
+    // Log costs to RunsService with costSource
     if (serviceRunId) {
       try {
         await addCosts(serviceRunId, [
           {
             costName: "anthropic-haiku-4.5-tokens-input",
+            costSource: keySource,
             quantity: result.inputTokens,
           },
           {
             costName: "anthropic-haiku-4.5-tokens-output",
+            costSource: keySource,
             quantity: result.outputTokens,
           },
         ]);
@@ -174,7 +169,7 @@ router.post("/qualify", serviceAuth, async (req: AuthenticatedRequest, res) => {
       suggestedAction: qualification.suggestedAction,
       extractedDetails: qualification.extractedDetails,
       costUsd: parseFloat(String(qualification.costUsd)),
-      usedByok: result.usedByok,
+      keySource: result.keySource,
       serviceRunId,
       createdAt: qualification.createdAt,
     });
